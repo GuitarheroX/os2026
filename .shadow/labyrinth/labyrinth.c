@@ -9,7 +9,7 @@
 #include "labyrinth.h"
 
 int main(int argc, char *argv[]) {
-    const char *short_options = "u";
+    const char *short_opts = "u";
     const struct option long_opts[] = {
         {"usage", no_argument, 0, 'u'},
         {0, 0, 0, 0}
@@ -17,7 +17,7 @@ int main(int argc, char *argv[]) {
 
     int c;
 
-    while ((c = getopt_long(argc, argv, short_options) != -1)){
+    while ((c = getopt_long(argc, argv, short_opts, long_opts, NULL) != -1)){
         switch (c) {
             case 'u':
                 printUsage();
