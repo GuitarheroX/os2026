@@ -38,7 +38,7 @@ void printUsage() {
 }
 
 bool isValidPlayer(char playerId) {
-    if (c >= '0' && c <= '9'){
+    if (playerId >= '0' && playerId <= '9'){
         return true;
     }
     return false;
