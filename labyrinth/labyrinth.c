@@ -8,16 +8,22 @@
 #include <getopt.h>
 #include "labyrinth.h"
 
+void printUsage();
+
 int main(int argc, char *argv[]) {
-    const char *short_options = "u";
+    const char *short_opts = "u";
     const struct option long_opts[] = {
         {"usage", no_argument, 0, 'u'},
+        {"map", require_argument, 0, 'm'},
+        {"player", require_argument, 0, 'p'},
+        {"move", require_argument, 1000},
+        {"version", no_argument, 0, 1001},
         {0, 0, 0, 0}
     };
 
     int c;
 
-    while ((c = getopt_long(argc, argv, short_options) != -1)){
+    while ((c = getopt_long(argc, argv, short_opts, long_opts, NULL)) != -1){
         switch (c) {
             case 'u':
                 printUsage();
@@ -38,7 +44,7 @@ void printUsage() {
 }
 
 bool isValidPlayer(char playerId) {
-    if (c >= '0' && c <= '9'){
+    if (playerId >= '0' && playerId <= '9'){
         return true;
     }
     return false;
