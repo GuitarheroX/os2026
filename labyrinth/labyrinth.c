@@ -4,10 +4,28 @@
 #include <stdbool.h>
 #include <assert.h>
 #include <testkit.h>
+#include <unistd.h>
+#include <getopt.h>
 #include "labyrinth.h"
 
 int main(int argc, char *argv[]) {
-    // TODO: Implement this function
+    const char *short_options = "u";
+    const struct option long_opts[] = {
+        {"usage", no_argument, 0, 'u'},
+        {0, 0, 0, 0}
+    };
+
+    int c;
+
+    while ((c = getopt_long(argc, argv, short_options) != -1)){
+        switch (c) {
+            case 'u':
+                printUsage();
+                return 0;
+            default:
+                abort();
+        }
+    }
     return 0;
 }
 
@@ -20,7 +38,9 @@ void printUsage() {
 }
 
 bool isValidPlayer(char playerId) {
-    // TODO: Implement this function
+    if (c >= '0' && c <= '9'){
+        return true;
+    }
     return false;
 }
 
