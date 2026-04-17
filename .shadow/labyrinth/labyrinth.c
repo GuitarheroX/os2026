@@ -8,6 +8,8 @@
 #include <getopt.h>
 #include "labyrinth.h"
 
+void printUsage();
+
 int main(int argc, char *argv[]) {
     const char *short_opts = "u";
     const struct option long_opts[] = {
