@@ -21,10 +21,10 @@ int main(int argc, char *argv[]) {
         {0, 0, 0, 0}
     };
 
-    int c;
+    int arg;
 
-    while ((c = getopt_long(argc, argv, short_opts, long_opts, NULL)) != -1){
-        switch (c) {
+    while ((arg = getopt_long(argc, argv, short_opts, long_opts, NULL)) != -1){
+        switch (arg) {
             case 'u':
                 printUsage();
                 return 0;
