@@ -10,7 +10,7 @@
 
 void printUsage();
 
-bool isValidPlayer(char playerId);
+bool isValidPlayer(char *playerId);
 
 bool isConnected(Labyrinth *labyrinth);
 
