@@ -188,7 +188,7 @@ bool isConnected(Labyrinth *labyrinth) {
     bool visited[MAX_ROWS][MAX_COLS] = {false};
     Position pos = findFirstEmptySpace(labyrinth);
     if (pos.row == -1 && pos.col == -1) {
-        fprintf(stderr, "Error: no empty space")
+        fprintf(stderr, "Error: no empty space");
         return false;
     }
     dfs(labyrinth, pos.row, pos.col, visited);
