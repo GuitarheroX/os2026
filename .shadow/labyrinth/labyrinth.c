@@ -32,7 +32,7 @@ int main(int argc, char *argv[]) {
                 abort();
         }
     }
-    printf("-1");
+    printf("___________________________________");
     Labyrinth labyrinth = {0};
     char map[100][100];
     FILE *file = fopen("./maps/map.txt", "r");
