@@ -206,7 +206,7 @@ void dfs(Labyrinth *labyrinth, int row, int col, bool visited[MAX_ROWS][MAX_COLS
         int new_col = col + dc[i];
         if (new_row >= 0 && new_row < labyrinth->rows &&
             new_col >= 0 && new_col < labyrinth->cols &&
-            (labyrinth[new_row][new_col] != '#') && !visited[new_row][new_col]) {
+            (labyrinth->map[new_row][new_col] != '#') && !visited[new_row][new_col]) {
             dfs(labyrinth, new_row, new_col, visited);    
         }
     }
