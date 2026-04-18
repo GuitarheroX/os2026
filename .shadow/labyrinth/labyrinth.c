@@ -58,6 +58,7 @@ int main(int argc, char *argv[]) {
     }
     rows = r;
     fclose(file);
+    printf("1");
     for (int i = 0; i < rows; i++){
         for (int j = 0; j < cols; j++){
             //printf("111");
