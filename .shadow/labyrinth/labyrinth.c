@@ -9,7 +9,14 @@
 #include "labyrinth.h"
 
 void printUsage();
+
+bool isValidPlayer(char playerId);
+
+bool isConnected(Labyrinth *labyrinth);
+
 void printMap(Labyrinth *labyrinth);
+
+
 int main(int argc, char *argv[]) {
     const char *short_opts = "m:p:";
     const struct option long_opts[] = {
@@ -59,7 +66,9 @@ int main(int argc, char *argv[]) {
     }
 
     Labyrinth labyrinth = {0};
-    loadMap(&labyrinth, "./maps/map.txt");
+    if (!loadMap(&labyrinth, "./maps/map.txt") || !isValidPlayer(*playerId) || !isConnected(&labyrinth)) {
+        return 1;
+    }
     printMap(&labyrinth);
     
     if (direction) {
@@ -92,7 +101,12 @@ bool loadMap(Labyrinth *labyrinth, const char *filename) {
     int ch;
     int r = 0;
     int c = 0;
-    while ((ch = fgetc(file)) != EOF && r < MAX_COLS) {
+    while ((ch = fgetc(file)) != EOF) {
+        if (r >= MAX_ROWS) {
+            fprintf(stderr, "Error: map exceeds maximum rows (%d)\n", MAX_ROWS);
+            fclose(file);
+            return false;
+        }
         if (ch == '\n') {
             if (labyrinth->rows == 0) {
                 labyrinth->cols = c;
@@ -101,6 +115,11 @@ bool loadMap(Labyrinth *labyrinth, const char *filename) {
             c = 0;
         }
         else {
+            if (c >= MAX_COLS) {
+                fprintf(stderr, "Error: map exceeds maximum cols (%d)\n", MAX_COLS);
+                fclose(file);
+                return false;
+            }
             labyrinth->map[r][c++] = ch;
         }
     }
@@ -131,7 +150,10 @@ Position findFirstEmptySpace(Labyrinth *labyrinth) {
 }
 
 bool isEmptySpace(Labyrinth *labyrinth, int row, int col) {
-    // TODO: Implement this function
+    assert(row < labyrinth->rows && col < labyrinth->cols);
+    if (labyrinth->map[row][col] == '.') {
+        return true;
+    }
     return false;
 }
 
@@ -151,6 +173,7 @@ void dfs(Labyrinth *labyrinth, int row, int col, bool visited[MAX_ROWS][MAX_COLS
 }
 
 bool isConnected(Labyrinth *labyrinth) {
-    // TODO: Implement this function
+    bool visited[MAX_ROWS][MAX_COLS] = {false};
+    
     return false;
 }
