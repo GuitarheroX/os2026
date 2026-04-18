@@ -64,9 +64,10 @@ bool loadMap(Labyrinth *labyrinth, const char *filename) {
         perror("Error opening file.");
         return false;
     }
+    int ch;
     int r = 0;
     int c = 0;
-    while ((char ch = fgetc(file)) != EOF && r < MAX_COLS) {
+    while ((ch = fgetc(file)) != EOF && r < MAX_COLS) {
         if (ch == '\n') {
             if (labyrinth->rows == 0) {
                 labyrinth->cols = c;
