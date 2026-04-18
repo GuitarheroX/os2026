@@ -11,9 +11,8 @@
 void printUsage();
 void printMap(Labyrinth *labyrinth);
 int main(int argc, char *argv[]) {
-    const char *short_opts = "um:p:";
+    const char *short_opts = "m:p:";
     const struct option long_opts[] = {
-        {"usage", no_argument, 0, 'u'},
         {"map", required_argument, 0, 'm'},
         {"player", required_argument, 0, 'p'},
         {"move", required_argument, 0, 1000},
@@ -28,9 +27,6 @@ int main(int argc, char *argv[]) {
     int version_flag = 0;
     while ((arg = getopt_long(argc, argv, short_opts, long_opts, NULL)) != -1){
         switch (arg) {
-            case 'u':
-                printUsage();
-                break;
             case 'm':
                 map_file = optarg;
                 break;
