@@ -14,6 +14,10 @@ int main(int argc, char *argv[]) {
     const char *short_opts = "u";
     const struct option long_opts[] = {
         {"usage", no_argument, 0, 'u'},
+        {"map", require_argument, 0, 'm'},
+        {"player", require_argument, 0, 'p'},
+        {"move", require_argument, 1000},
+        {"version", no_argument, 0, 1001},
         {0, 0, 0, 0}
     };
 
@@ -29,6 +33,8 @@ int main(int argc, char *argv[]) {
         }
     }
     return 0;
+    Labyrinth labyrinth;
+    loadMap(labyrinth, "./maps/map.txt");
 }
 
 void printUsage() {
@@ -47,8 +53,18 @@ bool isValidPlayer(char playerId) {
 }
 
 bool loadMap(Labyrinth *labyrinth, const char *filename) {
-    // TODO: Implement this function
-    return false;
+    FILE *file;
+    file = fopen(filelname, "r");
+    if (file == NULL) {
+        perror("Error opening file.");
+        return false;
+    }
+    char buffer[100];
+    while (fgets(buffer, sizeof(buffer), file)) {
+        printf("%s", buffer);
+    }
+    fclose(file);
+    return true;
 }
 
 Position findPlayer(Labyrinth *labyrinth, char playerId) {
