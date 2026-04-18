@@ -54,7 +54,7 @@ bool isValidPlayer(char playerId) {
 
 bool loadMap(Labyrinth *labyrinth, const char *filename) {
     FILE *file;
-    file = fopen(filelname, "r");
+    file = fopen(filename, "r");
     if (file == NULL) {
         perror("Error opening file.");
         return false;
