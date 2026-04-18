@@ -64,7 +64,7 @@ int main(int argc, char *argv[]) {
     for (int i = 0; i < rows; i++){
         for (int j = 0; j < cols; j++){
             //printf("111");
-            printf("%s", map[i][j]);
+            printf("%c", map[i][j]);
         }
         printf("\n");
     }
