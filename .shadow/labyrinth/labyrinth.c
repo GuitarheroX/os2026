@@ -11,7 +11,7 @@
 void printUsage();
 
 int main(int argc, char *argv[]) {
-    const char *short_opts = "u";
+    const char *short_opts = "um:p:";
     const struct option long_opts[] = {
         {"usage", no_argument, 0, 'u'},
         {"map", required_argument, 0, 'm'},
