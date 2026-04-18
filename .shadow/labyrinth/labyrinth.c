@@ -66,7 +66,7 @@ int main(int argc, char *argv[]) {
     }
 
     Labyrinth labyrinth = {0};
-    if (!loadMap(&labyrinth, "./maps/map.txt") || !isValidPlayer(*playerId) || !isConnected(&labyrinth)) {
+    if (!loadMap(&labyrinth, "./maps/map.txt") || !isValidPlayer(playerId) || !isConnected(&labyrinth)) {
         return 1;
     }
     printMap(&labyrinth);
@@ -85,12 +85,20 @@ void printUsage() {
     printf("  labyrinth --version\n");
 }
 
-bool isValidPlayer(char playerId) {
-    if (playerId >= '0' && playerId <= '9'){
-        return true;
+bool isValidPlayer(char *playerId) {
+    if (playerId == NULL || playerId[0] == '\0') {
+        fprintf(stderr, "Error: Invalid playerId (empty)\n");
+        return false;
     }
-    fprintf(stderr, "Error: Invalid playerId %c, expected 0 to 9\n", playerId);
-    return false;
+    if (strlen(playerId) != 1) {
+        fprintf(stderr, "Error: Invalid playerId %s, expected 0 to 9\n", playerId);
+        return false;
+    }
+    if (playerId[0] < '0' || playerId[0] > '9'){
+        fprintf(stderr, "Error: Invalid playerId %s, expected 0 to 9\n", playerId);
+        return false;
+    }
+    return true;
 }
 
 bool loadMap(Labyrinth *labyrinth, const char *filename) {
