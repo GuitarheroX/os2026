@@ -36,7 +36,7 @@ int main(int argc, char *argv[]) {
 
 
     loadMap(&labyrinth, "./maps/map.txt");
-    printf("size is %d", sizeof(labyrinth.map));
+    printf("size is %ld", sizeof(labyrinth.map));
     printf("%s", labyrinth.map[0][0]);
     printf("rows %d\n", labyrinth.rows);
     printf("cols %d\n", labyrinth.cols);
