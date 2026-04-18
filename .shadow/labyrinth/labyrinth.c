@@ -39,8 +39,8 @@ int main(int argc, char *argv[]) {
 
     for (int i = 0; i < labyrinth.rows; i++){
         for (int j = 0; j < labyrinth.cols; j++){
-            printf("1111111111111111111111111111");
-            printf("%s", labyrinth.map[i][j]);
+            printf("111");
+            //printf("%s", labyrinth.map[i][j]);
         }
         printf("\n");
     }
