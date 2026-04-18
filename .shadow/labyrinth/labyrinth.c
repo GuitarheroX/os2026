@@ -34,6 +34,12 @@ int main(int argc, char *argv[]) {
     }
     Labyrinth *labyrinth;
     loadMap(labyrinth, "./maps/map.txt");
+    for (int i = 0; i < labyrinth->rows; i++){
+        for (int j = 0; j < labyrinth->cols; j++){
+            printf("%s", labyrinth->map[i][j]);
+        }
+        printf("\n");
+    }
     return 0;
 }
 
@@ -53,16 +59,26 @@ bool isValidPlayer(char playerId) {
 }
 
 bool loadMap(Labyrinth *labyrinth, const char *filename) {
-    FILE *file;
-    file = fopen(filename, "r");
+    FILE *file = fopen(filename, "r");
     if (file == NULL) {
         perror("Error opening file.");
         return false;
     }
-    char buffer[100];
-    while (fgets(buffer, sizeof(buffer), file)) {
-        printf("%s", buffer);
+    int r = 0;
+    int c = 0;
+    while ((ch = fgetc(file)) != EOF && r < MAX_COLS) {
+        if (ch == '\n') {
+            if (labyrinth->rows == 0) {
+                labyrinth->cols = c;
+            }
+            r++;
+            c = 0;
+        }
+        else {
+            labyrinth->maps[r][c++] = ch;
+        }
     }
+    labyrinth->rows = r;
     fclose(file);
     return true;
 }
