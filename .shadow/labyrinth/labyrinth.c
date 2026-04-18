@@ -66,7 +66,7 @@ bool loadMap(Labyrinth *labyrinth, const char *filename) {
     }
     int r = 0;
     int c = 0;
-    while ((ch = fgetc(file)) != EOF && r < MAX_COLS) {
+    while ((char ch = fgetc(file)) != EOF && r < MAX_COLS) {
         if (ch == '\n') {
             if (labyrinth->rows == 0) {
                 labyrinth->cols = c;
@@ -75,7 +75,7 @@ bool loadMap(Labyrinth *labyrinth, const char *filename) {
             c = 0;
         }
         else {
-            labyrinth->maps[r][c++] = ch;
+            labyrinth->map[r][c++] = ch;
         }
     }
     labyrinth->rows = r;
