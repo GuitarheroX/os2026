@@ -14,9 +14,9 @@ int main(int argc, char *argv[]) {
     const char *short_opts = "u";
     const struct option long_opts[] = {
         {"usage", no_argument, 0, 'u'},
-        {"map", require_argument, 0, 'm'},
-        {"player", require_argument, 0, 'p'},
-        {"move", require_argument, 1000},
+        {"map", required_argument, 0, 'm'},
+        {"player", required_argument, 0, 'p'},
+        {"move", required_argument, 1000},
         {"version", no_argument, 0, 1001},
         {0, 0, 0, 0}
     };
