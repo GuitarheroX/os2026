@@ -89,13 +89,14 @@ bool isValidPlayer(char playerId) {
     if (playerId >= '0' && playerId <= '9'){
         return true;
     }
+    fprintf(stderr, "Error: Invalid playerId %c, expected 0 to 9\n", playerId);
     return false;
 }
 
 bool loadMap(Labyrinth *labyrinth, const char *filename) {
     FILE *file = fopen(filename, "r");
     if (file == NULL) {
-        perror("Error opening file.");
+        fprintf(stderr, "Error: opening file %s\n", filename);
         return false;
     }
     int ch;
@@ -187,12 +188,14 @@ bool isConnected(Labyrinth *labyrinth) {
     bool visited[MAX_ROWS][MAX_COLS] = {false};
     Position pos = findFirstEmptySpace(labyrinth);
     if (pos.row == -1 && pos.col == -1) {
+        fprintf(stderr, "Error: no empty space")
         return false;
     }
     dfs(labyrinth, pos.row, pos.col, visited);
     for (int i = 0; i < labyrinth->rows; i++) {
         for (int j = 0; j < labyrinth->cols; j++){
             if (isEmptySpace(labyrinth, i, j) && !visited[i][j]) {
+                fprintf(stderr, "Error: unreachable space (%d, %d)\n", i, j);
                 return false;
             }
         }
