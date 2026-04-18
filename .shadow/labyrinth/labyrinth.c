@@ -150,7 +150,7 @@ Position findFirstEmptySpace(Labyrinth *labyrinth) {
         for (int j = 0; j < labyrinth->cols; j++){
             if (isEmptySpace(labyrinth, i, j)) {
                 pos.row = i;
-                pow.col = j;
+                pos.col = j;
             }
         }
     }
