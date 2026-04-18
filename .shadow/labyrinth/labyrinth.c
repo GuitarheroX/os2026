@@ -175,8 +175,8 @@ void dfs(Labyrinth *labyrinth, int row, int col, bool visited[MAX_ROWS][MAX_COLS
     for (int i = 0; i < 4; i++) {
         int new_row = row + dr[i];
         int new_col = col + dc[i];
-        if (new_row >= 0 && new_row < labyrinth.rows &&
-            new_col >= 0 && new_col < labyrinth.cols &&
+        if (new_row >= 0 && new_row < labyrinth->rows &&
+            new_col >= 0 && new_col < labyrinth->cols &&
             isEmptySpace(labyrinth, new_row, new_col) && !visited[new_row][new_col]) {
             dfs(labyrinth, new_row, new_col, visited);    
         }
@@ -190,8 +190,8 @@ bool isConnected(Labyrinth *labyrinth) {
         return false;
     }
     dfs(labyrinth, pos.row, pos.col, visited);
-    for (int i = 0; i < labyrinth.rows; i++) {
-        for (int j = 0; j < labyrinth.cols; j++){
+    for (int i = 0; i < labyrinth->rows; i++) {
+        for (int j = 0; j < labyrinth->cols; j++){
             if (isEmptySpace(labyrinth, i, j) && !visited[i][j]) {
                 return false;
             }
