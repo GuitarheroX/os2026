@@ -32,9 +32,9 @@ int main(int argc, char *argv[]) {
                 abort();
         }
     }
-    return 0;
     Labyrinth *labyrinth;
     loadMap(labyrinth, "./maps/map.txt");
+    return 0;
 }
 
 void printUsage() {
