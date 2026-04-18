@@ -9,7 +9,7 @@
 #include "labyrinth.h"
 
 void printUsage();
-
+void printMap(Labyrinth *labyrinth);
 int main(int argc, char *argv[]) {
     const char *short_opts = "um:p:";
     const struct option long_opts[] = {
@@ -22,30 +22,53 @@ int main(int argc, char *argv[]) {
     };
 
     int arg = 0;
-
+    char *map_file = NULL;
+    char *playerId = NULL;
+    const char *direction = NULL;
+    int version_flag = 0;
     while ((arg = getopt_long(argc, argv, short_opts, long_opts, NULL)) != -1){
         switch (arg) {
             case 'u':
                 printUsage();
                 break;
             case 'm':
-                char *map_file = optarg;
-                printf("Map file: %s\n", map_file);
-                
-                Labyrinth labyrinth = {0};
-                loadMap(&labyrinth, "./maps/map.txt");
-                for (int i = 0; i < labyrinth.rows; i++){
-                    for (int j = 0; j < labyrinth.cols; j++){
-                        printf("%c", labyrinth.map[i][j]);
-                    }
-                    printf("\n");
-                }
+                map_file = optarg;
+                break;
+            case 'p':
+                playerId = optarg;
+                break;
+            case 1000:
+                direction = optarg;
+                break;
+            case 1001:
+                version_flag = 1;
                 break;
             default:
                 abort();
         }
     }
+    if (version_flag) {
+        if (map_file || playerId || direction) {
+            fprintf(stderr, "Error: --version cannot be used with other options\n");
+            return 1;
+        }
+        printf("Version 1.0\n");
+        return 0;
+    }
+    
+    if (!map_file || !playerId) {
+        fprintf(stderr, "Error: --map and --player must be used together\n");
+        printUsage();
+        return 1;
+    }
 
+    Labyrinth labyrinth = {0};
+    loadMap(&labyrinth, "./maps/map.txt");
+    printMap(&labyrinth);
+    
+    if (direction) {
+        //TODO: move
+    }
     return 0;
 }
 
@@ -88,6 +111,15 @@ bool loadMap(Labyrinth *labyrinth, const char *filename) {
     labyrinth->rows = r;
     fclose(file);
     return true;
+}
+
+void printMap(Labyrinth *labyrinth) {
+    for (int i = 0; i < labyrinth.rows; i++){
+        for (int j = 0; j < labyrinth.cols; j++){
+            printf("%c", labyrinth.map[i][j]);
+        }
+        printf("\n");
+    }
 }
 
 Position findPlayer(Labyrinth *labyrinth, char playerId) {
