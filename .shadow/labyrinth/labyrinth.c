@@ -145,8 +145,15 @@ Position findPlayer(Labyrinth *labyrinth, char playerId) {
 }
 
 Position findFirstEmptySpace(Labyrinth *labyrinth) {
-    // TODO: Implement this function
     Position pos = {-1, -1};
+    for (int i = 0; i < labyrinth->rows; i++) {
+        for (int j = 0; j < labyrinth->cols; j++){
+            if (isEmptySpace(labyrinth, i, j)) {
+                pos.row = i;
+                pow.col = j;
+            }
+        }
+    }
     return pos;
 }
 
@@ -188,7 +195,7 @@ bool isConnected(Labyrinth *labyrinth) {
     bool visited[MAX_ROWS][MAX_COLS] = {false};
     Position pos = findFirstEmptySpace(labyrinth);
     if (pos.row == -1 && pos.col == -1) {
-        fprintf(stderr, "Error: no empty space");
+        fprintf(stderr, "Error: no empty space\n");
         return false;
     }
     dfs(labyrinth, pos.row, pos.col, visited);
