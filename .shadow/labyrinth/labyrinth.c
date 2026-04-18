@@ -39,6 +39,7 @@ int main(int argc, char *argv[]) {
         perror("Error opening file.");
         return false;
     }
+    printf("0");
     int ch;
     int rows = 0;
     int cols = 0;
