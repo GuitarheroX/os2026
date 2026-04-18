@@ -29,7 +29,7 @@ int main(int argc, char *argv[]) {
                 printUsage();
                 return 0;
             case 'm':
-                map_file = optarg;
+                char *map_file = optarg;
                 printf("Map file: %s\n", map_file);
             default:
                 abort();
