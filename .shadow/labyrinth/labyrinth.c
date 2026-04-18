@@ -21,7 +21,7 @@ int main(int argc, char *argv[]) {
         {0, 0, 0, 0}
     };
 
-    int arg;
+    int arg = 0;
 
     while ((arg = getopt_long(argc, argv, short_opts, long_opts, NULL)) != -1){
         switch (arg) {
@@ -32,6 +32,7 @@ int main(int argc, char *argv[]) {
                 abort();
         }
     }
+    printf("-1");
     Labyrinth labyrinth = {0};
     char map[100][100];
     FILE *file = fopen("./maps/map.txt", "r");
