@@ -16,7 +16,7 @@ int main(int argc, char *argv[]) {
         {"usage", no_argument, 0, 'u'},
         {"map", required_argument, 0, 'm'},
         {"player", required_argument, 0, 'p'},
-        {"move", required_argument, 1000},
+        {"move", required_argument, 0, 1000},
         {"version", no_argument, 0, 1001},
         {0, 0, 0, 0}
     };
@@ -28,6 +28,9 @@ int main(int argc, char *argv[]) {
             case 'u':
                 printUsage();
                 return 0;
+            case 'm':
+                map_file = optarg;
+                printf("Map file: %s\n", map_file);
             default:
                 abort();
         }
