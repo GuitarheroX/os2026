@@ -12,6 +12,8 @@ void printUsage();
 
 void printMap(Labyrinth *labyrinth);
 
+Position allocatePlayer(Labyrinth *labyrinth, char playerId);
+
 
 int main(int argc, char *argv[]) {
     const char *short_opts = "m:p:";
@@ -135,8 +137,15 @@ void printMap(Labyrinth *labyrinth) {
 }
 
 Position findPlayer(Labyrinth *labyrinth, char playerId) {
-    // TODO: Implement this function
     Position pos = {-1, -1};
+    for (int i = 0; i < labyrinth->rows; i++) {
+        for (int j = 0; j < labyrinth->cols; j++){
+            if (labyrinth->map[i][j] == playerId) {
+                pos.row = i;
+                pos.col = j;
+            }
+        }
+    }
     return pos;
 }
 
@@ -153,16 +162,32 @@ Position findFirstEmptySpace(Labyrinth *labyrinth) {
     return pos;
 }
 
+Position allocatePlayer(Labyrinth *labyrinth, char playerId) {
+    Position pos = findPlayer(labyrinth, playerId);
+    if (pos.row != -1) {
+        return pos;
+    }
+    pos = findFirstEmptySpace(labyrinth);
+    if (pos.row == -1) {
+        fprintf(stderr, "No space for a new player");
+    }
+    else {
+        labyrinth->map[pos.row][pos.col] = playerId;
+    }
+    return pos;
+}
+
 bool isEmptySpace(Labyrinth *labyrinth, int row, int col) {
     assert(row < labyrinth->rows && col < labyrinth->cols);
-    if (labyrinth->map[row][col] != '#') {
+    if (labyrinth->map[row][col] == '.') {
         return true;
     }
     return false;
 }
 
 bool movePlayer(Labyrinth *labyrinth, char playerId, const char *direction) {
-    // TODO: Implement this function
+    Position pos = allocatePlayer(labyrinth, playerId);
+    // TODO: move
     return false;
 }
 
@@ -181,7 +206,7 @@ void dfs(Labyrinth *labyrinth, int row, int col, bool visited[MAX_ROWS][MAX_COLS
         int new_col = col + dc[i];
         if (new_row >= 0 && new_row < labyrinth->rows &&
             new_col >= 0 && new_col < labyrinth->cols &&
-            isEmptySpace(labyrinth, new_row, new_col) && !visited[new_row][new_col]) {
+            (labyrinth[new_row][new_col] != '#') && !visited[new_row][new_col]) {
             dfs(labyrinth, new_row, new_col, visited);    
         }
     }
@@ -189,15 +214,25 @@ void dfs(Labyrinth *labyrinth, int row, int col, bool visited[MAX_ROWS][MAX_COLS
 
 bool isConnected(Labyrinth *labyrinth) {
     bool visited[MAX_ROWS][MAX_COLS] = {false};
-    Position pos = findFirstEmptySpace(labyrinth);
-    if (pos.row == -1 && pos.col == -1) {
+    Position pos = {-1, -1};
+    for (int i = 0; i < labyrinth->rows; i++) {
+        for (int j = 0; j < labyrinth->cols; j++){
+            if (labyrinth->map[i][j] != '#') {
+                pos.row = i;
+                pos.col = j;
+                goto found;
+            }
+        }
+    }
+    found:
+    if (pos.row == -1) {
         fprintf(stderr, "Error: no empty space\n");
         return false;
     }
     dfs(labyrinth, pos.row, pos.col, visited);
     for (int i = 0; i < labyrinth->rows; i++) {
         for (int j = 0; j < labyrinth->cols; j++){
-            if (isEmptySpace(labyrinth, i, j) && !visited[i][j]) {
+            if ((labyrinth->map[i][j] != '#') && !visited[i][j]) {
                 fprintf(stderr, "Error: unreachable space (%d, %d)\n", i, j);
                 return false;
             }
