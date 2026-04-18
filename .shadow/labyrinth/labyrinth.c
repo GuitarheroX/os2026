@@ -27,21 +27,23 @@ int main(int argc, char *argv[]) {
         switch (arg) {
             case 'u':
                 printUsage();
-                return 0;
+                break;
             case 'm':
                 char *map_file = optarg;
                 printf("Map file: %s\n", map_file);
+                
+                Labyrinth labyrinth = {0};
+                loadMap(&labyrinth, "./maps/map.txt");
+                for (int i = 0; i < labyrinth.rows; i++){
+                    for (int j = 0; j < labyrinth.cols; j++){
+                        printf("%c", labyrinth.map[i][j]);
+                    }
+                    printf("\n");
+                }
+                break;
             default:
                 abort();
         }
-    }
-    Labyrinth labyrinth = {0};
-    loadMap(&labyrinth, "./maps/map.txt");
-    for (int i = 0; i < labyrinth.rows; i++){
-        for (int j = 0; j < labyrinth.cols; j++){
-            printf("%c", labyrinth.map[i][j]);
-        }
-        printf("\n");
     }
 
     return 0;
