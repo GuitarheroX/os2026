@@ -32,55 +32,11 @@ int main(int argc, char *argv[]) {
                 abort();
         }
     }
-    printf("___________________________________\n");
     Labyrinth labyrinth = {0};
-    char map[100][100];
-    FILE *file = fopen("./maps/map.txt", "r");
-    if (file == NULL) {
-        perror("Error opening file.");
-        return false;
-    }
-    printf("0\n");
-    int ch;
-    int rows = 0;
-    int cols = 0;
-    int r = 0;
-    int c = 0;
-    while ((ch = fgetc(file)) != EOF && r < MAX_COLS) {
-        if (ch == '\n') {
-            if (rows == 0) {
-                cols = c;
-            }
-            r++;
-            c = 0;
-        }
-        else {
-            map[r][c++] = ch;
-        }
-    }
-    rows = r;
-    fclose(file);
-    printf("1\n");
-    for (int i = 0; i < rows; i++){
-        for (int j = 0; j < cols; j++){
-            //printf("111");
-            printf("%c", map[i][j]);
-        }
-        printf("\n");
-    }
-    return 0;
-
     loadMap(&labyrinth, "./maps/map.txt");
-    printf("size is %ld\n", sizeof(labyrinth.map));
-    //printf("%s\n", labyrinth.map[0][0]);
-    printf("rows %d\n", labyrinth.rows);
-    printf("cols %d\n", labyrinth.cols);
-
-    printf("%s", labyrinth.map[0][0]);
     for (int i = 0; i < labyrinth.rows; i++){
         for (int j = 0; j < labyrinth.cols; j++){
-            //printf("111");
-            printf("%s", labyrinth.map[i][j]);
+            printf("%c", labyrinth.map[i][j]);
         }
         printf("\n");
     }
