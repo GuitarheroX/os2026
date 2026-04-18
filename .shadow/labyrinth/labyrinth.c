@@ -32,7 +32,7 @@ int main(int argc, char *argv[]) {
                 abort();
         }
     }
-    printf("___________________________________");
+    printf("___________________________________\n");
     Labyrinth labyrinth = {0};
     char map[100][100];
     FILE *file = fopen("./maps/map.txt", "r");
@@ -40,7 +40,7 @@ int main(int argc, char *argv[]) {
         perror("Error opening file.");
         return false;
     }
-    printf("0");
+    printf("0\n");
     int ch;
     int rows = 0;
     int cols = 0;
@@ -60,7 +60,7 @@ int main(int argc, char *argv[]) {
     }
     rows = r;
     fclose(file);
-    printf("1");
+    printf("1\n");
     for (int i = 0; i < rows; i++){
         for (int j = 0; j < cols; j++){
             //printf("111");
@@ -71,8 +71,8 @@ int main(int argc, char *argv[]) {
     return 0;
 
     loadMap(&labyrinth, "./maps/map.txt");
-    printf("size is %ld", sizeof(labyrinth.map));
-    //printf("%s", labyrinth.map[0][0]);
+    printf("size is %ld\n", sizeof(labyrinth.map));
+    //printf("%s\n", labyrinth.map[0][0]);
     printf("rows %d\n", labyrinth.rows);
     printf("cols %d\n", labyrinth.cols);
 
