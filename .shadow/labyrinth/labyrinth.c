@@ -151,7 +151,7 @@ Position findFirstEmptySpace(Labyrinth *labyrinth) {
 
 bool isEmptySpace(Labyrinth *labyrinth, int row, int col) {
     assert(row < labyrinth->rows && col < labyrinth->cols);
-    if (labyrinth->map[row][col] == '.') {
+    if (labyrinth->map[row][col] != '#') {
         return true;
     }
     return false;
@@ -169,11 +169,33 @@ bool saveMap(Labyrinth *labyrinth, const char *filename) {
 
 // Check if all empty spaces are connected using DFS
 void dfs(Labyrinth *labyrinth, int row, int col, bool visited[MAX_ROWS][MAX_COLS]) {
-    // TODO: Implement this function
+    visited[row][col] = true;
+    int dr[] = {-1, 1, 0, 0};
+    int dc[] = {0, 0, -1, 1};
+    for (int i = 0; i < 4; i++) {
+        int new_row = row + dr[i];
+        int new_col = col + dc[i];
+        if (new_row >= 0 && new_row < labyrinth.rows &&
+            new_col >= 0 && new_col < labyrinth.cols &&
+            isEmptySpace(labyrinth, new_row, new_col) && !visited[new_row][new_col]) {
+            dfs(labyrinth, new_row, new_col, visited);    
+        }
+    }
 }
 
 bool isConnected(Labyrinth *labyrinth) {
     bool visited[MAX_ROWS][MAX_COLS] = {false};
-    
-    return false;
+    Position pos = findFirstEmptySpace(labyrinth);
+    if (pos.row == -1 && pos.col == -1) {
+        return false;
+    }
+    dfs(labyrinth, pos.row, pos.col, visited);
+    for (int i = 0; i < labyrinth.rows; i++) {
+        for (int j = 0; j < labyrinth.cols; j++){
+            if (isEmptySpace(labyrinth, i, j) && !visited[i][j]) {
+                return false;
+            }
+        }
+    }
+    return true;
 }
