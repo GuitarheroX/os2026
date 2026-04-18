@@ -33,7 +33,7 @@ int main(int argc, char *argv[]) {
         }
     }
     return 0;
-    Labyrinth labyrinth;
+    Labyrinth *labyrinth;
     loadMap(labyrinth, "./maps/map.txt");
 }
 
