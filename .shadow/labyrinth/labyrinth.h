@@ -14,7 +14,7 @@ typedef struct {
 } Position;
 
 
-bool isValidPlayer(char playerId);
+bool isValidPlayer(char *playerId);
 bool loadMap(Labyrinth *labyrinth, const char *filename);
 Position findPlayer(Labyrinth *labyrinth, char playerId);
 Position findFirstEmptySpace(Labyrinth *labyrinth);
