@@ -159,9 +159,11 @@ Position findFirstEmptySpace(Labyrinth *labyrinth) {
             if (isEmptySpace(labyrinth, i, j)) {
                 pos.row = i;
                 pos.col = j;
+                goto found;
             }
         }
     }
+    found:
     return pos;
 }
 
