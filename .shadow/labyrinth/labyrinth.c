@@ -54,6 +54,10 @@ int main(int argc, char *argv[]) {
             fprintf(stderr, "Error: --version cannot be used with other options\n");
             return 1;
         }
+        else if (optind < argc) {
+            fprintf(stderr, "Error: --version does not accept arguments\n");
+            return 1;
+        }
         printf("Labyrinth Game, Version 1.0\n");
         return 0;
     }
