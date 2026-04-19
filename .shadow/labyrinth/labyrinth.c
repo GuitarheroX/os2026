@@ -67,13 +67,13 @@ int main(int argc, char *argv[]) {
     if (!loadMap(&labyrinth, "./maps/map.txt") || !isValidPlayer(*playerId) || !isConnected(&labyrinth)) {
         return 1;
     }
-    printMap(&labyrinth);
     
     if (direction) {
         if(!movePlayer(&labyrinth, *playerId, direction)) {
             return 1;
         }
     }
+    printMap(&labyrinth);
     saveMap(&labyrinth, map_file);
     return 0;
 }
