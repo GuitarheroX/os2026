@@ -45,7 +45,7 @@ int main(int argc, char *argv[]) {
                 version_flag = 1;
                 break;
             default:
-                fprintf(stderr, "Error: nonexist arg\n")
+                fprintf(stderr, "Error: nonexist arg\n");
                 return 1;
         }
     }
