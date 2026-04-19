@@ -188,7 +188,7 @@ Position allocatePlayer(Labyrinth *labyrinth, char playerId) {
 }
 
 bool isEmptySpace(Labyrinth *labyrinth, int row, int col) {
-    if (row < labyrinth->rows && col < labyrinth->cols) {
+    if (row >= labyrinth->rows && col >= labyrinth->cols) {
         return false;
     }
     if (labyrinth->map[row][col] == '.') {
