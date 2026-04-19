@@ -115,8 +115,8 @@ bool loadMap(Labyrinth *labyrinth, const char *filename) {
             return false;
         }
         if (ch == '\n') {
+            printf("%d\n", c);
             if (r == 0) {
-                printf("1");
                 labyrinth->cols = c;
             }
             if (c != labyrinth->cols) {
