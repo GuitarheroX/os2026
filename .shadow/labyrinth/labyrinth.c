@@ -74,7 +74,7 @@ int main(int argc, char *argv[]) {
             return 1;
         }
     }
-    saveMap(&labyrinth, filename);
+    saveMap(&labyrinth, map_file);
     return 0;
 }
 
