@@ -115,7 +115,7 @@ bool loadMap(Labyrinth *labyrinth, const char *filename) {
             return false;
         }
         if (ch == '\n') {
-            if (labyrinth->rows == 0) {
+            if (r == 0) {
                 labyrinth->cols = c;
             }
             if (c != labyrinth->cols) {
