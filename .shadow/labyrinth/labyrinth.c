@@ -45,7 +45,8 @@ int main(int argc, char *argv[]) {
                 version_flag = 1;
                 break;
             default:
-                abort();
+                fprintf(stderr, "Error: nonexist arg\n")
+                return 1;
         }
     }
     if (version_flag) {
@@ -53,7 +54,7 @@ int main(int argc, char *argv[]) {
             fprintf(stderr, "Error: --version cannot be used with other options\n");
             return 1;
         }
-        printf("Version 1.0\n");
+        printf("Labyrinth Game, Version 1.0\n");
         return 0;
     }
     
