@@ -70,8 +70,11 @@ int main(int argc, char *argv[]) {
     printMap(&labyrinth);
     
     if (direction) {
-        //TODO: move
+        if(!movePlayer(&labyrinth, playerId, direction)) {
+            return 1;
+        }
     }
+    saveMap(&labyrinth, filename);
     return 0;
 }
 
@@ -187,12 +190,53 @@ bool isEmptySpace(Labyrinth *labyrinth, int row, int col) {
 
 bool movePlayer(Labyrinth *labyrinth, char playerId, const char *direction) {
     Position pos = allocatePlayer(labyrinth, playerId);
-    // TODO: move
-    return false;
+    int i = 0;
+    int j = 0;
+    if (strcmp(direction, "up") == 0) {
+        i = -1;
+        j = 0;
+    }
+    else if (strcmp(direction, "down") == 0) {
+        i = 1;
+        j = 0;
+    }
+    else if (strcmp(direction, "left") == 0) {
+        i = 0;
+        j = -1;
+    }
+    else if (strcmp(direction, "right") == 0) {
+        i = 0;
+        j = 1;
+    }
+    else {
+        fprintf(stderr, "Error: unknown direction %s\n", direction);
+    }
+    int new_row = pos.row + i;
+    int new_col = pos.col + j;
+    if (!isEmptySpace(labyrinth, new_row, new_col)) {
+        fprintf(stderr, "Error: position (%d, %d) is not empty space\n", new_row, new_col);
+        return false;
+    }
+    labyrinth->map[pos.row][pos.col] = '.';
+    labyrinth->map[new_row][new_col] = playerId;
+    return true;
 }
 
 bool saveMap(Labyrinth *labyrinth, const char *filename) {
-    // TODO: Implement this function
+    FILE *fp = fopen(filename, "w");
+    if (!fp) {
+        perror("fopen");
+        return false;
+    }
+
+    for (int i = 0; i < labyrinth->rows; i++) {
+        for (int j = 0; j < labyrinth->cols; j++) {
+            fputc(labyrinth->map[i][j], fp);
+        }
+        fputc('\n', fp);
+    }
+
+    fcolse(fp);
     return false;
 }
 
