@@ -70,7 +70,7 @@ int main(int argc, char *argv[]) {
     printMap(&labyrinth);
     
     if (direction) {
-        if(!movePlayer(&labyrinth, playerId, direction)) {
+        if(!movePlayer(&labyrinth, *playerId, direction)) {
             return 1;
         }
     }
