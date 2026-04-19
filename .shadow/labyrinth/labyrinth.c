@@ -69,7 +69,7 @@ int main(int argc, char *argv[]) {
     }
 
     Labyrinth labyrinth = {0};
-    if (!loadMap(&labyrinth, "./maps/map.txt") || !isValidPlayer(*playerId) || !isConnected(&labyrinth)) {
+    if (!loadMap(&labyrinth, map_file) || !isValidPlayer(*playerId) || !isConnected(&labyrinth)) {
         return 1;
     }
     
