@@ -118,6 +118,10 @@ bool loadMap(Labyrinth *labyrinth, const char *filename) {
             if (labyrinth->rows == 0) {
                 labyrinth->cols = c;
             }
+            if (c != labyrinth->cols) {
+                fprintf(stderr, "Error: inconsistent rows\n");
+                return false;
+            }
             r++;
             c = 0;
         }
