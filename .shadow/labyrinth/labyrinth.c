@@ -236,7 +236,7 @@ bool saveMap(Labyrinth *labyrinth, const char *filename) {
         fputc('\n', fp);
     }
 
-    fcolse(fp);
+    fclose(fp);
     return false;
 }
 
