@@ -21,6 +21,7 @@ static int get_ppid_from_stat(pid_t pid, pid_t *ppid_out) {
     snprintf(path, sizeof(path), "/proc/%d/stat", pid);
     FILE *f = fopen(path, "r");
     if (!f) return -1;
+    // 将文件内容读取到 line 中
     if (!fgets(line, sizeof(line), f)) { fclose(f); return -1; }
     fclose(f);
 
