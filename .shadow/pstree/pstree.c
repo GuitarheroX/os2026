@@ -8,7 +8,7 @@
 typedef struct Node {
     pid_t pid;
     pid_t ppid;
-    char comm[256] = "?";
+    char comm[256];
     struct Node* children;
     struct Node* next;
 } Node;
@@ -29,8 +29,8 @@ void insert(pid_t pid, Node* node){
     HashEntry *e = malloc(sizeof(HashEntry));
     e->pid = pid;
     e->node = node;
-    e->next = HashEntry[hash(pid)];
-    HashEntry[hash(pid)] = e;
+    e->next = hash_table[hash(pid)];
+    hash_table[hash(pid)] = e;
 }
 
 Node* hashFind(pid_t pid) {
