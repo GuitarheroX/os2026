@@ -5,6 +5,43 @@
 #include <string.h>
 #include <unistd.h>
 
+typedef struct Node {
+    pid_t pid;
+    pid_t ppid;
+    char comm[256] = "?";
+    struct Node* children;
+    struct Node* next;
+} Node;
+
+typedef struct HashEntry {
+    pid_t pid;
+    Node* node;
+    struct HashEntry* next;
+} HashEntry;
+
+HashEntry *hash_table[1024];
+
+unsigned int hash(pid_t pid) {
+    return pid % 1024;
+}
+
+void insert(pid_t pid, Node* node){
+    HashEntry *e = malloc(sizeof(HashEntry));
+    e->pid = pid;
+    e->node = node;
+    e->next = HashEntry[hash(pid)];
+    HashEntry[hash(pid)] = e;
+}
+
+Node* hashFind(pid_t pid) {
+    for (HashEntry *e = hash_table[hash(pid)]; e; e = e->next) {
+        if (e->pid == pid) {
+            return e->node;
+        }
+    }
+    return NULL;
+}
+
 static int read_comm(pid_t pid, char *buf, size_t n) {
     char path[64];
     snprintf(path, sizeof(path), "/proc/%d/comm", pid);
@@ -33,15 +70,6 @@ static int get_ppid_from_stat(pid_t pid, pid_t *ppid_out) {
 }
 
 int main(void) {
-    pid_t self = getpid();
-    pid_t parent = getppid();
-
-    char self_comm[256] = "?", parent_comm[256] = "?";
-    read_comm(self, self_comm, sizeof self_comm);
-    read_comm(parent, parent_comm, sizeof parent_comm);
-
-    printf("%s(%d)\n", parent_comm, parent);
-
     DIR *d = opendir("/proc");
     if (!d) { perror("opendir /proc"); return 1; }
 
@@ -52,12 +80,13 @@ int main(void) {
 
         pid_t ppid;
         if (get_ppid_from_stat(pid, &ppid) != 0) continue;
-        if (ppid != parent) continue;
 
         char comm[256] = "?";
         read_comm(pid, comm, sizeof comm);
-
-        printf("  |- %s(%d)%s\n", comm, pid, (pid == self) ? "  <== me" : "");
+        
+        Node* node = malloc(sizeof(Node));
+        node->pid = pid;
+        strcpy(node->comm, comm);
     }
 
     closedir(d);
