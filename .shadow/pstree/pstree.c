@@ -121,7 +121,7 @@ int main(int argc, char *argv[]) {
                 numeric_sort_flag = 1;
                 break;
             case 'V':
-                version_flag = 0;
+                version_flag = 1;
                 break;
             default:
                 fprintf(stderr, "Error: nonexist arg\n");
