@@ -131,8 +131,8 @@ int main(int argc, char *argv[]) {
     // 储存进哈希表
     while ((de = readdir(d)) != NULL) {
         if (!isdigit((unsigned char)de->d_name[0])) continue;
-        printf("%d before \n", pid); // debug
         pid_t pid = (pid_t)atoi(de->d_name);
+        printf("%d before \n", pid); // debug
 
         pid_t ppid;
         if (get_ppid_from_stat(pid, &ppid) != 0) continue;
