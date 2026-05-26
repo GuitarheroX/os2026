@@ -192,6 +192,8 @@ int main(int argc, char *argv[]) {
     closedir(d);
 
     // 打印进程树
-    print_tree(root, 0, show_pids_flag); 
+    char *prefix = "";
+    int is_last = 0;
+    print_tree(root, prefix, is_last, show_pids_flag); 
     return 0;
 }
