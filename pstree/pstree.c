@@ -4,6 +4,44 @@
 #include <ctype.h>
 #include <string.h>
 #include <unistd.h>
+#include <getopt.h>
+
+typedef struct Node {
+    pid_t pid;
+    pid_t ppid;
+    char comm[256];
+    struct Node* children;
+    struct Node* next;
+} Node;
+
+typedef struct HashEntry {
+    pid_t pid;
+    Node* node;
+    struct HashEntry* next;
+} HashEntry;
+
+HashEntry *hash_table[1024];
+
+unsigned int hash(pid_t pid) {
+    return pid % 1024;
+}
+
+void insert(pid_t pid, Node* node){
+    HashEntry *e = malloc(sizeof(HashEntry));
+    e->pid = pid;
+    e->node = node;
+    e->next = hash_table[hash(pid)];
+    hash_table[hash(pid)] = e;
+}
+
+Node* hashFind(pid_t pid) {
+    for (HashEntry *e = hash_table[hash(pid)]; e; e = e->next) {
+        if (e->pid == pid) {
+            return e->node;
+        }
+    }
+    return NULL;
+}
 
 static int read_comm(pid_t pid, char *buf, size_t n) {
     char path[64];
@@ -21,44 +59,124 @@ static int get_ppid_from_stat(pid_t pid, pid_t *ppid_out) {
     snprintf(path, sizeof(path), "/proc/%d/stat", pid);
     FILE *f = fopen(path, "r");
     if (!f) return -1;
+    // 将文件内容读取到 line 中
     if (!fgets(line, sizeof(line), f)) { fclose(f); return -1; }
     fclose(f);
 
     int id, ppid;
     char comm[256], state;
-    if (sscanf(line, "%d (%255[^)]) %c %d", &id, comm, &state, &ppid) != 4) return -1;
+
+    char *open = strchr(line, '(');
+    char *close = strrchr(line, ')');
+    if (!open || !close) return -1;
+    size_t name_len = close - open - 1;
+    memcpy(comm, open + 1, name_len);
+    comm[name_len] = '\0';
+
+    if (sscanf(line, "%d", &id) != 1) return -1;
+
+    char *after_close = close + 1;
+    if (sscanf(after_close, " %c %d", &state, &ppid) != 2) return -1;
+
     *ppid_out = (pid_t)ppid;
     return 0;
 }
 
-int main(void) {
-    pid_t self = getpid();
-    pid_t parent = getppid();
+void print_tree(Node* node, int depth, int show_pids_flag) {
+    if (!node) return;
+    printf("%*s", depth * 4, "");
+    printf("%s", node->comm);
+    if (show_pids_flag) {
+        printf("(%d)", node->pid);
+    }
+    printf("\n");
+    print_tree(node->children, depth + 1, show_pids_flag);
+    print_tree(node->next, depth, show_pids_flag);
+}
 
-    char self_comm[256] = "?", parent_comm[256] = "?";
-    read_comm(self, self_comm, sizeof self_comm);
-    read_comm(parent, parent_comm, sizeof parent_comm);
-
-    printf("%s(%d)\n", parent_comm, parent);
+int main(int argc, char *argv[]) {
+    const char *short_opts = "pnV";
+    const struct option long_opts[] = {
+        {"show-pids", no_argument, 0, 'p'},
+        {"numeric-sort", no_argument, 0, 'n'},
+        {"version", no_argument, 0, 'V'},
+        {0, 0, 0, 0}
+    };
+    int arg = 0;
+    int show_pids_flag = 0;
+    int numeric_sort_flag = 0;
+    int version_flag = 0;
+    while ((arg = getopt_long(argc, argv, short_opts, long_opts, NULL)) != -1) {
+        switch (arg) {
+            case 'p':
+                show_pids_flag = 1;
+                break;
+            case 'n':
+                numeric_sort_flag = 1;
+                break;
+            case 'V':
+                version_flag = 0;
+                break;
+            default:
+                fprintf(stderr, "Error: nonexist arg\n");
+                return 1;
+        }
+    }
+    if (version_flag) {
+        if (show_pids_flag || numeric_sort_flag) {
+            fprintf(stderr, "Error: --version cannot be used with other options\n");
+            return 1;
+        }
+        else if (optind < argc) {
+            fprintf(stderr, "Error: --version does not accept arguments\n");
+            return 1;
+        }
+        printf("pstree, Version 1.0\n");
+        return 0;
+    }
 
     DIR *d = opendir("/proc");
     if (!d) { perror("opendir /proc"); return 1; }
-
+    pid_t all_pids[1024]; 
+    int num_pid = 0;
     struct dirent *de;
+    // 储存进哈希表
     while ((de = readdir(d)) != NULL) {
         if (!isdigit((unsigned char)de->d_name[0])) continue;
         pid_t pid = (pid_t)atoi(de->d_name);
 
         pid_t ppid;
         if (get_ppid_from_stat(pid, &ppid) != 0) continue;
-        if (ppid != parent) continue;
-
+        all_pids[num_pid] = pid;
+        num_pid += 1;
         char comm[256] = "?";
         read_comm(pid, comm, sizeof comm);
-
-        printf("  |- %s(%d)%s\n", comm, pid, (pid == self) ? "  <== me" : "");
+        
+        Node* node = malloc(sizeof(Node));
+        node->pid = pid;
+        node->ppid = ppid;
+        strcpy(node->comm, comm);
+        insert(pid, node);
     }
 
+    // 形成树结构
+    Node* root = NULL;
+    for (int i = 0; i < num_pid; i++) {
+        Node* node = hashFind(all_pids[i]);
+        if (node->ppid == 0) {
+            root = node; 
+            continue;
+        }
+        Node* father_node = hashFind(node->ppid);
+        if (!father_node) father_node = root;
+        if (father_node->children) {
+            node->next = father_node->children;
+        }
+        father_node->children = node;
+    }
     closedir(d);
+
+    // 打印进程树
+    print_tree(root, 0, show_pids_flag); 
     return 0;
 }
