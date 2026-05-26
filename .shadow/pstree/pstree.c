@@ -73,10 +73,11 @@ static int get_ppid_from_stat(pid_t pid, pid_t *ppid_out) {
 void print_tree(Node* node, int depth, int show_pids_flag) {
     if (!node) return;
     printf("%*s", depth * 4, "");
-    printf("%s\n", node->comm);
+    printf("%s", node->comm);
     if (show_pids_flag) {
         printf("(%d)", node->pid);
     }
+    printf("\n");
     print_tree(node->children, depth + 1, show_pids_flag);
     print_tree(node->next, depth, show_pids_flag);
 }
