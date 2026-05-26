@@ -193,7 +193,7 @@ int main(int argc, char *argv[]) {
 
     // 打印进程树
     char *prefix = "";
-    int is_last = 0;
+    int is_last = 1;
     print_tree(root, prefix, is_last, show_pids_flag); 
     return 0;
 }
