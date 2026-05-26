@@ -72,12 +72,12 @@ static int get_ppid_from_stat(pid_t pid, pid_t *ppid_out) {
     if (!open || !close) return -1;
     size_t name_len = close - open - 1;
     memcpy(comm, open + 1, name_len);
-    comm[name_len] == '\0';
+    comm[name_len] = '\0';
 
     if (sscanf(line, "%d", &id) != 1) return -1;
 
     char *after_close = close + 1;
-    if (sscanf(line, " %c %d", &state, &ppid) != 2) return -1;
+    if (sscanf(after_close, " %c %d", &state, &ppid) != 2) return -1;
 
     *ppid_out = (pid_t)ppid;
     return 0;
