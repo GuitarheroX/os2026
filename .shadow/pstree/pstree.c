@@ -108,6 +108,7 @@ int main(void) {
         Node* node = hashFind(all_pids[i]);
         if (node->ppid == 0) {
             root = node; 
+            continue;
         }
         Node* father_node = hashFind(node->ppid);
         if (father_node->children) {
