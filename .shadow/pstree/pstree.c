@@ -65,7 +65,6 @@ static int get_ppid_from_stat(pid_t pid, pid_t *ppid_out) {
 
     int id, ppid;
     char comm[256], state;
-    char *close_paren;
 
     char *open = strchr(line, '(');
     char *close = strrchr(line, ')');
