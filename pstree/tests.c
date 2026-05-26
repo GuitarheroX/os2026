@@ -3,7 +3,6 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <stdio.h>
-
 // ======================== System Tests ========================
 
 // Test the basic functionality without any arguments

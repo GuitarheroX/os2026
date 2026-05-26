@@ -82,16 +82,30 @@ static int get_ppid_from_stat(pid_t pid, pid_t *ppid_out) {
     return 0;
 }
 
-void print_tree(Node* node, int depth, int show_pids_flag) {
+int cmp_pid(const void*a, const void*b) {
+    pid_t pa = *(const pid_t *)a;
+    pid_t pb = *(const pid_t *)b;
+    return (pa < pb) - (pa > pb);
+}
+
+void print_tree(Node* node, const char* prefix, int show_pids_flag) {
     if (!node) return;
-    printf("%*s", depth * 4, "");
+
+    printf("%s", prefix);
+    int is_last = 0;
+    if (node->next) is_last = 1;
+    printf(is_last ? "└─" : "├─");
     printf("%s", node->comm);
     if (show_pids_flag) {
         printf("(%d)", node->pid);
     }
     printf("\n");
-    print_tree(node->children, depth + 1, show_pids_flag);
-    print_tree(node->next, depth, show_pids_flag);
+
+    char new_prefix[256];
+    snprintf(new_prefix, sizeof(new_prefix), "%s%s", prefix, is_last ? "    " : "│   ");
+
+    print_tree(node->children, new_prefix, show_pids_flag);
+    print_tree(node->next, prefix, show_pids_flag);
 }
 
 int main(int argc, char *argv[]) {
@@ -115,7 +129,7 @@ int main(int argc, char *argv[]) {
                 numeric_sort_flag = 1;
                 break;
             case 'V':
-                version_flag = 0;
+                version_flag = 1;
                 break;
             default:
                 fprintf(stderr, "Error: nonexist arg\n");
@@ -160,6 +174,9 @@ int main(int argc, char *argv[]) {
     }
 
     // 形成树结构
+    if (numeric_sort_flag) { 
+        qsort(all_pids, num_pid, sizeof(pid_t), cmp_pid);
+    }
     Node* root = NULL;
     for (int i = 0; i < num_pid; i++) {
         Node* node = hashFind(all_pids[i]);
@@ -177,6 +194,7 @@ int main(int argc, char *argv[]) {
     closedir(d);
 
     // 打印进程树
-    print_tree(root, 0, show_pids_flag); 
+    char *prefix = "";
+    print_tree(root, prefix, show_pids_flag); 
     return 0;
 }
