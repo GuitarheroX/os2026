@@ -135,6 +135,7 @@ int main(int argc, char *argv[]) {
 
         pid_t ppid;
         if (get_ppid_from_stat(pid, &ppid) != 0) continue;
+        printf("%d\n", pid); // debug
         all_pids[num_pid] = pid;
         num_pid += 1;
         char comm[256] = "?";
