@@ -88,16 +88,22 @@ int cmp_pid(const void*a, const void*b) {
     return (pa < pb) - (pa > pb);
 }
 
-void print_tree(Node* node, int depth, int show_pids_flag) {
+void print_tree(Node* node, const char* prefix, int is_last, int show_pids_flag) {
     if (!node) return;
-    printf("%*s", depth * 4, "");
+
+    printf("%s", prefix);
+    printf(is_last ? "└─" : "├─");
     printf("%s", node->comm);
     if (show_pids_flag) {
         printf("(%d)", node->pid);
     }
     printf("\n");
-    print_tree(node->children, depth + 1, show_pids_flag);
-    print_tree(node->next, depth, show_pids_flag);
+
+    char new_prefix[256];
+    snprintf(new_prefix, sizeof(new_prefix), "%s%s", prefix, is_last ? "    " : "│   ");
+
+    print_tree(node->children, new_prefix, 1, show_pids_flag);
+    print_tree(node->next, prefix, is_last, show_pids_flag);
 }
 
 int main(int argc, char *argv[]) {
