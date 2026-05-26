@@ -111,6 +111,7 @@ int main(void) {
             continue;
         }
         Node* father_node = hashFind(node->ppid);
+        if (!father_node) father_node = root;
         if (father_node->children) {
             node->next = father_node->children;
         }
