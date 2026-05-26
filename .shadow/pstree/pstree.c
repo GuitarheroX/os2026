@@ -72,23 +72,38 @@ static int get_ppid_from_stat(pid_t pid, pid_t *ppid_out) {
 int main(void) {
     DIR *d = opendir("/proc");
     if (!d) { perror("opendir /proc"); return 1; }
-
+    pid_t all_pids[1024]; 
+    int num_pid = 0;
     struct dirent *de;
+    // 储存进哈希表
     while ((de = readdir(d)) != NULL) {
         if (!isdigit((unsigned char)de->d_name[0])) continue;
         pid_t pid = (pid_t)atoi(de->d_name);
 
         pid_t ppid;
         if (get_ppid_from_stat(pid, &ppid) != 0) continue;
-
+        all_pids[num_pid] = pid;
+        num_pid += 1;
         char comm[256] = "?";
         read_comm(pid, comm, sizeof comm);
         
         Node* node = malloc(sizeof(Node));
         node->pid = pid;
+        node->ppid = ppid;
         strcpy(node->comm, comm);
+        insert(pid, node);
     }
 
+    // 形成树结构
+    for (int i = 0; i < num_pid; i++) {
+        Node* node = HashFind(all_pids[i]);
+        if (node->ppid == 0) continue;
+        Node* father_node = HashFind(node->ppid);
+        if (father_node->children) {
+            node->next = father_node->children;
+        }
+        father_node->children = node;
+    }
     closedir(d);
     return 0;
 }
