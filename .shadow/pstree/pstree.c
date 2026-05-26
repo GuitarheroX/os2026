@@ -85,7 +85,7 @@ static int get_ppid_from_stat(pid_t pid, pid_t *ppid_out) {
 int cmp_pid(const void*a, const void*b) {
     pid_t pa = *(const pid_t *)a;
     pid_t pb = *(const pid_t *)b;
-    return (pa > pb) - (pa < pb);
+    return (pa < pb) - (pa > pb);
 }
 
 void print_tree(Node* node, int depth, int show_pids_flag) {
