@@ -69,6 +69,14 @@ static int get_ppid_from_stat(pid_t pid, pid_t *ppid_out) {
     return 0;
 }
 
+void print_tree(Node* node, int depth) {
+   if (!node) return;
+   printf("%*s", depth * 4, "");
+   printf("%s\n", node->comm);
+   print_tree(node->children, depth + 1);
+   print_tree(node->next, depth);
+}
+
 int main(void) {
     DIR *d = opendir("/proc");
     if (!d) { perror("opendir /proc"); return 1; }
@@ -95,15 +103,21 @@ int main(void) {
     }
 
     // 形成树结构
+    Node* root = NULL;
     for (int i = 0; i < num_pid; i++) {
-        Node* node = HashFind(all_pids[i]);
-        if (node->ppid == 0) continue;
-        Node* father_node = HashFind(node->ppid);
+        Node* node = hashFind(all_pids[i]);
+        if (node->ppid == 0) {
+            root = node; 
+        }
+        Node* father_node = hashFind(node->ppid);
         if (father_node->children) {
             node->next = father_node->children;
         }
         father_node->children = node;
     }
     closedir(d);
+
+    // 打印进程树
+    print_tree(root, 0); 
     return 0;
 }
