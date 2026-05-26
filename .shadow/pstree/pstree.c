@@ -88,10 +88,12 @@ int cmp_pid(const void*a, const void*b) {
     return (pa < pb) - (pa > pb);
 }
 
-void print_tree(Node* node, const char* prefix, int is_last, int show_pids_flag) {
+void print_tree(Node* node, const char* prefix, int show_pids_flag) {
     if (!node) return;
 
     printf("%s", prefix);
+    int is_last = 0;
+    if (node->next) is_last = 1;
     printf(is_last ? "└─" : "├─");
     printf("%s", node->comm);
     if (show_pids_flag) {
@@ -102,8 +104,8 @@ void print_tree(Node* node, const char* prefix, int is_last, int show_pids_flag)
     char new_prefix[256];
     snprintf(new_prefix, sizeof(new_prefix), "%s%s", prefix, is_last ? "    " : "│   ");
 
-    print_tree(node->children, new_prefix, 1, show_pids_flag);
-    print_tree(node->next, prefix, is_last, show_pids_flag);
+    print_tree(node->children, new_prefix, show_pids_flag);
+    print_tree(node->next, prefix, show_pids_flag);
 }
 
 int main(int argc, char *argv[]) {
@@ -193,7 +195,6 @@ int main(int argc, char *argv[]) {
 
     // 打印进程树
     char *prefix = "";
-    int is_last = 1;
-    print_tree(root, prefix, is_last, show_pids_flag); 
+    print_tree(root, prefix, show_pids_flag); 
     return 0;
 }
