@@ -144,11 +144,9 @@ int main(int argc, char *argv[]) {
     while ((de = readdir(d)) != NULL) {
         if (!isdigit((unsigned char)de->d_name[0])) continue;
         pid_t pid = (pid_t)atoi(de->d_name);
-        printf("%d before \n", pid); // debug
 
         pid_t ppid;
         if (get_ppid_from_stat(pid, &ppid) != 0) continue;
-        printf("%d after \n", pid); // debug
         all_pids[num_pid] = pid;
         num_pid += 1;
         char comm[256] = "?";
