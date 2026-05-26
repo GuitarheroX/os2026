@@ -4,6 +4,7 @@
 #include <ctype.h>
 #include <string.h>
 #include <unistd.h>
+#include <getopt.h>
 
 typedef struct Node {
     pid_t pid;
@@ -69,15 +70,58 @@ static int get_ppid_from_stat(pid_t pid, pid_t *ppid_out) {
     return 0;
 }
 
-void print_tree(Node* node, int depth) {
-   if (!node) return;
-   printf("%*s", depth * 4, "");
-   printf("%s\n", node->comm);
-   print_tree(node->children, depth + 1);
-   print_tree(node->next, depth);
+void print_tree(Node* node, int depth, int show_pids_flag) {
+    if (!node) return;
+    printf("%*s", depth * 4, "");
+    printf("%s\n", node->comm);
+    if (show_pids_flag) {
+        printf("(%d)", node->pid);
+    }
+    print_tree(node->children, depth + 1, show_pids_flag);
+    print_tree(node->next, depth, show_pids_flag);
 }
 
-int main(void) {
+int main(int argc, char *argv[]) {
+    const char* short_opts = "pnV";
+    const struct option long_opts = {
+        {"show-pids", no_argument, 0, "p"},
+        {"numeric-sort", no_argument, 0, "n"},
+        {"version", no_argument, 0, "V"},
+        {0, 0, 0, 0}
+    }
+    int arg = 0;
+    int show_pids_flag = 0;
+    int numeric_sort_flag = 0;
+    int version_flag = 0;
+    while ((arg = getopt_long(argc, argv, short_opts, long_opts, NULL)) != -1) {
+        switch (arg) {
+            case 'p':
+                show_pids_flag = 1;
+                break;
+            case 'n':
+                numeric_sort_flag = 1;
+                break;
+            case 'V':
+                version_flag = 0;
+                break;
+            default:
+                fprintf(stderr, "Error: nonexist arg\n");
+                return 1;
+        }
+    }
+    if (version_flag) {
+        if (show_pids_flag || numeric_sort_flag) {
+            fprintf(stderr, "Error: --version cannot be used with other options\n");
+            return 1;
+        }
+        else if (optind < argc) {
+            fprintf(stderr, "Error: --version does not accept arguments\n");
+            return 1;
+        }
+        printf("pstree, Version 1.0\n");
+        return 0;
+    }
+
     DIR *d = opendir("/proc");
     if (!d) { perror("opendir /proc"); return 1; }
     pid_t all_pids[1024]; 
@@ -120,6 +164,6 @@ int main(void) {
     closedir(d);
 
     // 打印进程树
-    print_tree(root, 0); 
+    print_tree(root, 0, show_pids_flag); 
     return 0;
 }
