@@ -82,13 +82,13 @@ void print_tree(Node* node, int depth, int show_pids_flag) {
 }
 
 int main(int argc, char *argv[]) {
-    const char* short_opts = "pnV";
-    const struct option long_opts = {
+    const char *short_opts = "pnV";
+    const struct option long_opts[] = {
         {"show-pids", no_argument, 0, "p"},
         {"numeric-sort", no_argument, 0, "n"},
         {"version", no_argument, 0, "V"},
         {0, 0, 0, 0}
-    }
+    };
     int arg = 0;
     int show_pids_flag = 0;
     int numeric_sort_flag = 0;
