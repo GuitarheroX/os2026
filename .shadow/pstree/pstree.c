@@ -82,6 +82,12 @@ static int get_ppid_from_stat(pid_t pid, pid_t *ppid_out) {
     return 0;
 }
 
+int cmp_pid(const void*a, const void*b) {
+    pid_t pa = *(const pid_t *)a;
+    pid_t pb = *(const pid_t *)b;
+    return (pa > pb) - (pa < pb);
+}
+
 void print_tree(Node* node, int depth, int show_pids_flag) {
     if (!node) return;
     printf("%*s", depth * 4, "");
@@ -160,6 +166,9 @@ int main(int argc, char *argv[]) {
     }
 
     // 形成树结构
+    if (numeric_sort_flag) { 
+        qsort(all_pids, num_pid, sizeof(pid_t), cmp_pid);
+    }
     Node* root = NULL;
     for (int i = 0; i < num_pid; i++) {
         Node* node = hashFind(all_pids[i]);
