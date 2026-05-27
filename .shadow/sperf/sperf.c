@@ -28,9 +28,18 @@ void print_top_syscalls(syscall_stats *stats, int n) {
 }
 
 int main(int argc, char *argv[]) {
+    // debug
     printf("argc = %d\n", argc);
     for (int i = 0; i < argc; i++) {
         printf("argv[%d] = %s\n", i, argv[i]);
+    }
+
+    pid_t fpid = fork();
+    if (fpid == 0) {
+        printf("child\n");
+    }
+    else {
+        printf("father\n");
     }
     return 0;
 }
