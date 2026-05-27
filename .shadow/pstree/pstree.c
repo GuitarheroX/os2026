@@ -92,8 +92,8 @@ void print_tree(Node* node, const char* prefix, int show_pids_flag) {
     if (!node) return;
 
     printf("%s", prefix);
-    int is_last = 0;
-    if (node->next) is_last = 1;
+    int is_last = 1;
+    if (node->next) is_last = 0;
     printf(is_last ? "└─" : "├─");
     printf("%s", node->comm);
     if (show_pids_flag) {
