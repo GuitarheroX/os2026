@@ -39,7 +39,8 @@ char *find_in_path(const char *file) {
     while(dir) {
         char fullpath[1024];
         snprintf(fullpath, sizeof(fullpath), "%s%s", dir, file);
-       
+        // debug
+        printf("Now in %s\n", fullpath);
         if (access(fullpath, F_OK) == 0) {
             if (access(fullpath, X_OK) == 0) {
                 result = strdup(fullpath);
