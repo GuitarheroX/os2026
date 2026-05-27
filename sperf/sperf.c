@@ -56,8 +56,14 @@ char *find_in_path(const char *file) {
 }
 
 int main(int argc, char *argv[]) {
-    extern char **environ;
+    // pipe
+    int pipefd[2];
+    if (pipe(pipefd) == -1) {
+        perror("pipe");
+        return 1;
+    }
 
+    extern char **environ;
     char **exec_argv = malloc((argc + 1) * sizeof(char *));
     exec_argv[0] = "strace";
     for (int i = 1; i < argc; i++) {
@@ -72,6 +78,8 @@ int main(int argc, char *argv[]) {
     }
 
     if (pid == 0) {
+        close(pipefd[0]);
+
         char *strace_path = find_in_path(exec_argv[0]);
         if (!strace_path) {
             fprintf(stderr, "找不到可执行文件: %s\n", exec_argv[0]);
