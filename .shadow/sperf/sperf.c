@@ -28,16 +28,51 @@ void add_syscall(syscall_stats *stats, const char *name, double time) {
 void print_top_syscalls(syscall_stats *stats, int n) {
 }
 
-int main(int argc, char *argv[]) {
-    // debug
-    printf("argc = %d\n", argc);
-    for (int i = 0; i < argc; i++) {
-        printf("argv[%d] = %s\n", i, argv[i]);
+char *find_in_path(const char *file) {
+    char *path = getenv("PATH");
+    char *path_copy = strdup(path);
+    if (!path_copy) return NULL;
+
+    char *dir = strtok(path_copy, ":");
+    char *result = NULL;
+    while(dir) {
+        char fullpath[1024];
+        snprintf(fullpath, seizeof(fullpath), "%s%s", dir, file);
+        
+        if (access(fullpath, X_OK) == 0) {
+            result = strdup(fullpath);
+            break;
+        }
+
+        dir = strtok(NULL, ":");
     }
 
-    pid_t fpid = fork();
-    if (fpid == 0) {
-        printf("child\n");
+    free(path_copy);
+    return result;
+}
+
+int main(int argc, char *argv[]) {
+    extern char **environ;
+
+    pid_t pid = fork();
+    if (pid == -1){
+        perror("fork");
+        return 1;
+    }
+
+    if (pid == 0) {
+        //printf("child\n");
+        char *fullpath = find_in_path(argv[1]);
+        if (!fullpath) {
+            fprintf(stderr, "找不到可执行文件: %s\n", argv[1]);
+            exit(1);
+        }
+        printf("fullpath is %s\n", fullpath);
+        execve(fullpath, &argv[1], environ);
+
+        perror("execve");
+        free(fullpath);
+        exit(1);
     }
     else {
         printf("father\n");
