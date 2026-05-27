@@ -29,6 +29,8 @@ void print_top_syscalls(syscall_stats *stats, int n) {
 
 int main(int argc, char *argv[]) {
     printf("argc = %d\n", argc);
-    printf("argv = %s\n", argv);
+    for (int i = 0; i < argc; i++) {
+        printf("argv[%d] = %s\n", i, argv[i]);
+    }
     return 0;
 }
