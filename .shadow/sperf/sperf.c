@@ -73,12 +73,12 @@ int main(int argc, char *argv[]) {
 
     if (pid == 0) {
         //printf("child\n");
-        char *fullpath = find_in_path(exec_argv[1]);
-        if (!fullpath) {
-            fprintf(stderr, "找不到可执行文件: %s\n", exec_argv[1]);
+        char *strace_path = find_in_path(exec_argv[0]);
+        if (!strace_path) {
+            fprintf(stderr, "找不到可执行文件: %s\n", exec_argv[0]);
             exit(1);
         }
-        execve(fullpath, exec_argv, environ);
+        execve(strace_path, exec_argv, environ);
 
         perror("execve");
         free(fullpath);
