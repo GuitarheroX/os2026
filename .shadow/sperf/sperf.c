@@ -58,7 +58,7 @@ char *find_in_path(const char *file) {
 int main(int argc, char *argv[]) {
     extern char **environ;
 
-    char *exec_argv[] = malloc((argc + 1) * sizeof(char *));
+    char **exec_argv = malloc((argc + 1) * sizeof(char *));
     exec_argv[0] = "strace";
     for (int i = 1; i < argc; i++) {
         exec_argv[i] = argv[i];
