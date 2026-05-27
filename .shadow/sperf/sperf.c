@@ -39,8 +39,6 @@ char *find_in_path(const char *file) {
     while(dir) {
         char fullpath[1024];
         snprintf(fullpath, sizeof(fullpath), "%s/%s", dir, file);
-        // debug
-        printf("Now in %s\n", fullpath);
         if (access(fullpath, F_OK) == 0) {
             if (access(fullpath, X_OK) == 0) {
                 result = strdup(fullpath);
@@ -60,6 +58,13 @@ char *find_in_path(const char *file) {
 int main(int argc, char *argv[]) {
     extern char **environ;
 
+    char *exec_argv[] = malloc((argc + 1) * sizeof(char *));
+    exec_argv[0] = "strace";
+    for (int i = 1; i < argc; i++) {
+        exec_argv[i] = argv[i];
+    }
+    exec_argv[argc] = NULL;
+
     pid_t pid = fork();
     if (pid == -1){
         perror("fork");
@@ -68,13 +73,12 @@ int main(int argc, char *argv[]) {
 
     if (pid == 0) {
         //printf("child\n");
-        char *fullpath = find_in_path(argv[1]);
+        char *fullpath = find_in_path(exec_argv[1]);
         if (!fullpath) {
-            fprintf(stderr, "找不到可执行文件: %s\n", argv[1]);
+            fprintf(stderr, "找不到可执行文件: %s\n", exec_argv[1]);
             exit(1);
         }
-        printf("fullpath is %s\n", fullpath);
-        execve(fullpath, &argv[1], environ);
+        execve(fullpath, exec_argv, environ);
 
         perror("execve");
         free(fullpath);
