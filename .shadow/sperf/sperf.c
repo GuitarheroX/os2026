@@ -81,7 +81,7 @@ int main(int argc, char *argv[]) {
         execve(strace_path, exec_argv, environ);
 
         perror("execve");
-        free(fullpath);
+        free(strace_path);
         exit(1);
     }
     else {
