@@ -37,7 +37,7 @@ char *find_in_path(const char *file) {
     char *result = NULL;
     while(dir) {
         char fullpath[1024];
-        snprintf(fullpath, seizeof(fullpath), "%s%s", dir, file);
+        snprintf(fullpath, sizeof(fullpath), "%s%s", dir, file);
         
         if (access(fullpath, X_OK) == 0) {
             result = strdup(fullpath);
