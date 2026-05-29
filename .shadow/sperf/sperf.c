@@ -82,12 +82,13 @@ int main(int argc, char *argv[]) {
         perror("fork");
         return 1;
     }
-    // debug
-    printf("BUFSIZ = %d\n", BUFSIZ);
     if (pid == 0) {
         // this is child
         close(pipefd[0]);
 
+        // debug
+        char *hello = "hello\n";
+        write(pipefd[1], hello, sizeof(hello));
         int devnull = open("/dev/null", O_WRONLY);
         dup2(devnull, STDOUT_FILENO);
         dup2(devnull, STDERR_FILENO);
