@@ -106,7 +106,7 @@ int main(int argc, char *argv[]) {
     // this is father
     else {
         char buf[BUFSIZ];    
-        if(read(pipefd[0], buf, BUFSIZE) < 0) {
+        if(read(pipefd[0], buf, BUFSIZ) < 0) {
             perror("read");
             exit(1);
         }
