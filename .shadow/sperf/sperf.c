@@ -118,6 +118,5 @@ int main(int argc, char *argv[]) {
         }
     }
     close(pipefd[0]);
-    wait(NULL);
     return 0;
 }
