@@ -82,7 +82,8 @@ int main(int argc, char *argv[]) {
         perror("fork");
         return 1;
     }
-
+    // debug
+    printf("BUFSIZ = %d\n", BUFSIZ);
     if (pid == 0) {
         // this is child
         close(pipefd[0]);
