@@ -87,7 +87,7 @@ int main(int argc, char *argv[]) {
         close(pipefd[0]);
 
         // debug
-        char *hello = "hello\n";
+        char *hello = "hello";
         write(pipefd[1], hello, sizeof(hello));
         int devnull = open("/dev/null", O_WRONLY);
         dup2(devnull, STDOUT_FILENO);
