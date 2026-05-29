@@ -62,15 +62,19 @@ int main(int argc, char *argv[]) {
         perror("pipe");
         return 1;
     }
+    char fd_path[32];
+    snprintf(fd_path, sizeof(fd_path), "/dev/fd/%d", pipefd[1]);
 
     extern char **environ;
-    char **exec_argv = malloc((argc + 2) * sizeof(char *));
+    char **exec_argv = malloc((argc + 4) * sizeof(char *));
     exec_argv[0] = "strace";
     exec_argv[1] = "-T";
+    exec_argv[2] = "-o";
+    exec_argv[3] = fd_path;
     for (int i = 1; i < argc; i++) {
-        exec_argv[i + 1] = argv[i];
+        exec_argv[i + 3] = argv[i];
     }
-    exec_argv[argc + 1] = NULL;
+    exec_argv[argc + 3] = NULL;
 
     pid_t pid = fork();
     if (pid == -1){
@@ -79,7 +83,13 @@ int main(int argc, char *argv[]) {
     }
 
     if (pid == 0) {
+        // this is child
         close(pipefd[0]);
+
+        int devnull = open("/dev/null", O_WRONLY);
+        dup2(devnull, STDOUT_FILENO);
+        dup2(devnull, STDERR_FILENO);
+        close(devnull);
 
         char *strace_path = find_in_path(exec_argv[0]);
         if (!strace_path) {
@@ -92,8 +102,14 @@ int main(int argc, char *argv[]) {
         free(strace_path);
         exit(1);
     }
+    // this is father
     else {
-        printf("father\n");
+        char buf[BUFSIZ];    
+        if(read(pipefd[0], buf, BUFSIZE) < 0) {
+            perror("read");
+            exit(1);
+        }
+        printf("%s\n", buf);
     }
     return 0;
 }
