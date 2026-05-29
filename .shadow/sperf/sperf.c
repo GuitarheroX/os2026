@@ -111,7 +111,7 @@ int main(int argc, char *argv[]) {
         char buf[BUFSIZ];    
         ssize_t n;
         while (read(pipefd[0], buf, BUFSIZ) > 0) {
-            write(STDOUT_FILENO, buf, n);    
+            printf("%s", buf);
         }
         if (n < 0) {
             perror("read");
