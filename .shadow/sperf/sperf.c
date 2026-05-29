@@ -106,10 +106,23 @@ int main(int argc, char *argv[]) {
     // this is father
     else {
         close(pipefd[1]);
-        char buf[BUFSIZ];    
+
+        char buf[BUFSIZ];
+        char line_buf[BUFSIZ];
+        size_t line_len = 0;
         ssize_t n;
         while ((n = read(pipefd[0], buf, BUFSIZ)) > 0) {
-            write(STDOUT_FILENO, buf, n);
+            for (ssize_t i = 0; i < n; i++) {
+                if (buf[i] == '\n') {
+                    line_buf[line_len] = '\0';
+                    // 处理 line_buf
+                    printf("%s\n", line_buf);
+                    line_len = 0;
+                }
+                else if (line_len < sizeof(line_buf) - 1) {
+                    line_buf[line_len++] = buf[i];
+                }
+            }   
         }
         if (n < 0) {
             perror("read");
