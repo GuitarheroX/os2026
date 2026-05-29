@@ -107,12 +107,17 @@ int main(int argc, char *argv[]) {
     }
     // this is father
     else {
+        close(pipe[1]);
         char buf[BUFSIZ];    
-        if(read(pipefd[0], buf, BUFSIZ) < 0) {
-            perror("read");
-            exit(1);
+        ssize_t n;
+        while (read(pipefd[0], buf, BUFSIZ) > 0) {
+            write(STDOUT_FILENO, buf, n);    
         }
-        printf("%s\n", buf);
+        if (n < 0) {
+            perror("read");
+        }
     }
+    close(pipefd[0]);
+    wait(NULL);
     return 0;
 }
