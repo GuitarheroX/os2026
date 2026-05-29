@@ -112,7 +112,7 @@ int main(int argc, char *argv[]) {
         while ((n = read(pipefd[0], buf, BUFSIZ)) > 0) {
             write(STDOUT_FILENO, buf, n);
             cnt ++;
-            if (cnt > 1) break;
+            if (cnt > 2) break;
         }
         if (n < 0) {
             perror("read");
