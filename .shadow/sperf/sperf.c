@@ -107,7 +107,7 @@ int main(int argc, char *argv[]) {
     }
     // this is father
     else {
-        close(pipe[1]);
+        close(pipefd[1]);
         char buf[BUFSIZ];    
         ssize_t n;
         while (read(pipefd[0], buf, BUFSIZ) > 0) {
