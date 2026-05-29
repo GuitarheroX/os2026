@@ -107,7 +107,7 @@ int main(int argc, char *argv[]) {
         close(pipefd[1]);
         char buf[BUFSIZ];    
         ssize_t n;
-        while (n = read(pipefd[0], buf, BUFSIZ) > 0) {
+        while ((n = read(pipefd[0], buf, BUFSIZ)) > 0) {
             printf("%s", buf);
         }
         if (n < 0) {
