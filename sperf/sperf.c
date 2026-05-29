@@ -1,4 +1,6 @@
 #include <unistd.h>
+#include <time.h>
+#include <fcntl.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -20,7 +22,17 @@ typedef struct {
     double total_time;
 } syscall_stats;
 
-int parse_strace_line(char *line, char *syscall_name, double *time) {
+int parse_strace_line(const char *line) {
+    char name[64];
+    double time;
+
+    sscanf(line, "%62[^(]", name);
+    char *time_ptr = strstr(line, "<");
+    if (time_ptr && sscanf(time_ptr, "<%lf>", &time) == 1) {
+        // 处理 name 和 time
+        printf("%s %f\n", name, time);
+    }
+
 }
 
 void add_syscall(syscall_stats *stats, const char *name, double time) {
@@ -62,27 +74,38 @@ int main(int argc, char *argv[]) {
         perror("pipe");
         return 1;
     }
+    char fd_path[32];
+    snprintf(fd_path, sizeof(fd_path), "/dev/fd/%d", pipefd[1]);
 
     extern char **environ;
-    char **exec_argv = malloc((argc + 1) * sizeof(char *));
+    int num_strace_cmd = 4;
+    char **exec_argv = malloc((argc + num_strace_cmd) * sizeof(char *));
     exec_argv[0] = "strace";
+    exec_argv[1] = "-T";
+    exec_argv[2] = "-o";
+    exec_argv[3] = fd_path;
     for (int i = 1; i < argc; i++) {
-        exec_argv[i] = argv[i];
+        exec_argv[i + num_strace_cmd - 1] = argv[i];
     }
-    exec_argv[argc] = NULL;
+    exec_argv[argc + num_strace_cmd - 1] = NULL;
 
     pid_t pid = fork();
     if (pid == -1){
         perror("fork");
         return 1;
     }
-
     if (pid == 0) {
+        // this is child
         close(pipefd[0]);
 
-        char *strace_path = find_in_path(exec_argv[0]);
+        int devnull = open("/dev/null", O_WRONLY);
+        dup2(devnull, STDOUT_FILENO);
+        dup2(devnull, STDERR_FILENO);
+        close(devnull);
+
+        char *strace_path = find_in_path("strace");
         if (!strace_path) {
-            fprintf(stderr, "找不到可执行文件: %s\n", exec_argv[0]);
+            fprintf(stderr, "找不到可执行文件: %s\n", "strace");
             exit(1);
         }
         execve(strace_path, exec_argv, environ);
@@ -91,8 +114,36 @@ int main(int argc, char *argv[]) {
         free(strace_path);
         exit(1);
     }
+    // this is father
     else {
-        printf("father\n");
+        close(pipefd[1]);
+
+        char buf[BUFSIZ];
+        char line_buf[BUFSIZ];
+        size_t line_len = 0;
+        ssize_t n;
+        time_t last_print = 0;
+        while ((n = read(pipefd[0], buf, BUFSIZ)) > 0) {
+            for (ssize_t i = 0; i < n; i++) {
+                if (buf[i] == '\n') {
+                    line_buf[line_len] = '\0';
+                    parse_strace_line(line_buf);
+                    line_len = 0;
+                }
+                else if (line_len < sizeof(line_buf) - 1) {
+                    line_buf[line_len++] = buf[i];
+                }
+                time_t now = time(NULL);
+                if (now - last_print >= 0.1) {
+                    // 打印信息
+                    last_print = now;
+                }
+            }   
+        }
+        if (n < 0) {
+            perror("read");
+        }
     }
+    close(pipefd[0]);
     return 0;
 }
