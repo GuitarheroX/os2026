@@ -1,4 +1,5 @@
 #include <unistd.h>
+#include <sys/time.h>
 #include <fcntl.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -111,16 +112,21 @@ int main(int argc, char *argv[]) {
         char line_buf[BUFSIZ];
         size_t line_len = 0;
         ssize_t n;
+        time_t last_print = 0;
         while ((n = read(pipefd[0], buf, BUFSIZ)) > 0) {
             for (ssize_t i = 0; i < n; i++) {
                 if (buf[i] == '\n') {
                     line_buf[line_len] = '\0';
                     // 处理 line_buf
-                    printf("%s\n", line_buf);
                     line_len = 0;
                 }
                 else if (line_len < sizeof(line_buf) - 1) {
                     line_buf[line_len++] = buf[i];
+                }
+                time_t now = time(NULL);
+                if (now - last_print >= 0.1) {
+                    // 打印信息
+                    last_print = now;
                 }
             }   
         }
