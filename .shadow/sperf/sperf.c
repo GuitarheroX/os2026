@@ -86,9 +86,6 @@ int main(int argc, char *argv[]) {
         // this is child
         close(pipefd[0]);
 
-        // debug
-        char hello[BUFSIZ] = "hello";
-        write(pipefd[1], hello, BUFSIZ);
         int devnull = open("/dev/null", O_WRONLY);
         dup2(devnull, STDOUT_FILENO);
         dup2(devnull, STDERR_FILENO);
