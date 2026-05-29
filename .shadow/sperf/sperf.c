@@ -110,7 +110,7 @@ int main(int argc, char *argv[]) {
         ssize_t n;
         int cnt = 0;
         while ((n = read(pipefd[0], buf, BUFSIZ)) > 0) {
-            printf("%s", buf);
+            write(STDOUT_FILENO, buf, n);
             cnt ++;
             if (cnt > 1) break;
         }
