@@ -112,7 +112,7 @@ int main(int argc, char *argv[]) {
         while ((n = read(pipefd[0], buf, BUFSIZ)) > 0) {
             printf("%s", buf);
             cnt ++;
-            if (cnt > 2) break;
+            if (cnt > 1) break;
         }
         if (n < 0) {
             perror("read");
