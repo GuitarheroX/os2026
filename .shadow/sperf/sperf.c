@@ -22,7 +22,17 @@ typedef struct {
     double total_time;
 } syscall_stats;
 
-int parse_strace_line(char *line, char *syscall_name, double *time) {
+int parse_strace_line(const char *line) {
+    char name[64];
+    double time;
+
+    sscanf(line, "%62[^(]", name);
+    char *time_ptr = strstr(line, "<");
+    if (time_ptr && sscanf(time_ptr, "<%lf>", &time) == 1) {
+        // 处理 name 和 time
+        printf("%s %f\n", name, time);
+    }
+
 }
 
 void add_syscall(syscall_stats *stats, const char *name, double time) {
@@ -117,7 +127,7 @@ int main(int argc, char *argv[]) {
             for (ssize_t i = 0; i < n; i++) {
                 if (buf[i] == '\n') {
                     line_buf[line_len] = '\0';
-                    // 处理 line_buf
+                    parse_strace_line(line_buf);
                     line_len = 0;
                 }
                 else if (line_len < sizeof(line_buf) - 1) {
