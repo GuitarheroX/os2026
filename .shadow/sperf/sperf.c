@@ -67,15 +67,16 @@ int main(int argc, char *argv[]) {
     snprintf(fd_path, sizeof(fd_path), "/dev/fd/%d", pipefd[1]);
 
     extern char **environ;
-    char **exec_argv = malloc((argc + 4) * sizeof(char *));
+    int num_strace_cmd = 4;
+    char **exec_argv = malloc((argc + num_strace_cmd) * sizeof(char *));
     exec_argv[0] = "strace";
     exec_argv[1] = "-T";
     exec_argv[2] = "-o";
     exec_argv[3] = fd_path;
     for (int i = 1; i < argc; i++) {
-        exec_argv[i + 3] = argv[i];
+        exec_argv[i + num_strace_cmd - 1] = argv[i];
     }
-    exec_argv[argc + 3] = NULL;
+    exec_argv[argc + num_strace_cmd - 1] = NULL;
 
     pid_t pid = fork();
     if (pid == -1){
@@ -91,9 +92,9 @@ int main(int argc, char *argv[]) {
         dup2(devnull, STDERR_FILENO);
         close(devnull);
 
-        char *strace_path = find_in_path(exec_argv[0]);
+        char *strace_path = find_in_path("strace");
         if (!strace_path) {
-            fprintf(stderr, "找不到可执行文件: %s\n", exec_argv[0]);
+            fprintf(stderr, "找不到可执行文件: %s\n", "strace");
             exit(1);
         }
         execve(strace_path, exec_argv, environ);
@@ -109,6 +110,7 @@ int main(int argc, char *argv[]) {
         ssize_t n;
         while ((n = read(pipefd[0], buf, BUFSIZ)) > 0) {
             printf("%s", buf);
+            break;
         }
         if (n < 0) {
             perror("read");
