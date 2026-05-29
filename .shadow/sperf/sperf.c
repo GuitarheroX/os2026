@@ -108,9 +108,11 @@ int main(int argc, char *argv[]) {
         close(pipefd[1]);
         char buf[BUFSIZ];    
         ssize_t n;
+        int cnt = 0;
         while ((n = read(pipefd[0], buf, BUFSIZ)) > 0) {
             printf("%s", buf);
-            break;
+            cnt ++;
+            if (cnt > 2) break;
         }
         if (n < 0) {
             perror("read");
