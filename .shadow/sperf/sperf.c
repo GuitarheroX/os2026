@@ -56,14 +56,21 @@ char *find_in_path(const char *file) {
 }
 
 int main(int argc, char *argv[]) {
-    extern char **environ;
-
-    char **exec_argv = malloc((argc + 1) * sizeof(char *));
-    exec_argv[0] = "strace";
-    for (int i = 1; i < argc; i++) {
-        exec_argv[i] = argv[i];
+    // pipe
+    int pipefd[2];
+    if (pipe(pipefd) == -1) {
+        perror("pipe");
+        return 1;
     }
-    exec_argv[argc] = NULL;
+
+    extern char **environ;
+    char **exec_argv = malloc((argc + 2) * sizeof(char *));
+    exec_argv[0] = "strace";
+    exec_argv[1] = "-T";
+    for (int i = 1; i < argc; i++) {
+        exec_argv[i + 1] = argv[i];
+    }
+    exec_argv[argc + 1] = NULL;
 
     pid_t pid = fork();
     if (pid == -1){
@@ -72,7 +79,8 @@ int main(int argc, char *argv[]) {
     }
 
     if (pid == 0) {
-        //printf("child\n");
+        close(pipefd[0]);
+
         char *strace_path = find_in_path(exec_argv[0]);
         if (!strace_path) {
             fprintf(stderr, "找不到可执行文件: %s\n", exec_argv[0]);
