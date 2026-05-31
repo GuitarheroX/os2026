@@ -71,6 +71,7 @@ void print_top_syscalls(syscall_stats *s_stats, int n) {
     qsort(s_stats->stats, s_stats->count, sizeof(syscall_stat), cmp);
 
     // debug
+    printf("------------------------------------------------\n");
     for (int i = 0; i < s_stats->count; i++) {
         printf("%s %f\n", s_stats->stats[i].name, s_stats->stats[i].time);
     }
