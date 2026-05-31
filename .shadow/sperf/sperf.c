@@ -45,13 +45,14 @@ int parse_strace_line(const char *line, syscall_stats *s_stats) {
                 s_stats->stats[i].time += time;
                 s_stats->count++;
                 s_stats->total_time += time;
+                // debug
+                printf("total_time = %f\n", s_stats->total_time);
                 return 0;
             }
         }
         add_syscall(s_stats, name, time);
         return 0;
     }
-    perror("No time info available");
     return -1;
 
 }
