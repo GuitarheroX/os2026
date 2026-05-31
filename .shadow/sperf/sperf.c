@@ -186,8 +186,8 @@ int main(int argc, char *argv[]) {
                 else if (line_len < sizeof(line_buf) - 1) {
                     line_buf[line_len++] = buf[i];
                 }
-                time_t now = time(NULL);
             }   
+            time_t now = time(NULL);
             if (now - last_print >= 0.1) {
                 print_top_syscalls(&s_stats, TOP_N);
                 last_print = now;
