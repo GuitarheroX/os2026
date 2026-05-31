@@ -177,6 +177,8 @@ int main(int argc, char *argv[]) {
             for (ssize_t i = 0; i < n; i++) {
                 if (buf[i] == '\n') {
                     line_buf[line_len] = '\0';
+                    // debug
+                    printf("%s\n", line_buf);
                     parse_strace_line(line_buf, &s_stats);
                     line_len = 0;
                 }
