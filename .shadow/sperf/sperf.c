@@ -199,6 +199,9 @@ int main(int argc, char *argv[]) {
         if (n < 0) {
             perror("read");
         }
+        if (elapsed < 0.1) {
+            print_top_syscalls(&s_stats, TOP_N);
+        }
     }
     close(pipefd[0]);
     return 0;
