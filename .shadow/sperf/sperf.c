@@ -23,9 +23,10 @@ typedef struct {
 } syscall_stats;
 
 void add_syscall(syscall_stats *s_stats, const char *name, double time) {
-    syscall_stat * cnt = s_stats->stats[s_stats->count++];
+    syscall_stat *cnt = s_stats->stats[s_stats->count++];
     strcpy(cnt->name, name);
     cnt->time = time;
+    s_stats->count++;
     s_stats->total_time += time;
 }
 
@@ -40,6 +41,7 @@ int parse_strace_line(const char *line, syscall_stats *s_stats) {
         for (int i = 0; i < s_stats->count; i++) {
             if (strcmp(s_stats->stats[i].name, name) == 0) {
                 s_stats->stats[i].time += time;
+                s_stats->count++;
                 s_stats->total_time += time;
                 return 0;
             }
@@ -64,7 +66,7 @@ void print_top_syscalls(syscall_stats *s_stats, int n) {
     qsort(s_stats->stats, s_stats->count, sizeof(syscall_stat), cmp);
 
     for (int i = 0; i < n; i++) {
-        printf("%s (%d%%)\n", s_stats->stats[i].name, s_stats->stats[i].time / s_stats->total_time);
+        printf("%s (%d%%)\n", s_stats->stats[i].name, round(s_stats->stats[i].time / s_stats->total_time));
     }
 }
 
