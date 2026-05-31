@@ -26,7 +26,6 @@ void add_syscall(syscall_stats *s_stats, const char *name, double time) {
     syscall_stat *cnt = &s_stats->stats[s_stats->count++];
     strcpy(cnt->name, name);
     cnt->time = time;
-    s_stats->count++;
     s_stats->total_time += time;
     // debug
     printf("%s %f\n", cnt->name, cnt->time);
