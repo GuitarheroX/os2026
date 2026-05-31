@@ -28,7 +28,7 @@ void add_syscall(syscall_stats *s_stats, const char *name, double time) {
     cnt->time = time;
     s_stats->total_time += time;
     // debug
-    printf("%s %f\n", cnt->name, cnt->time);
+    // printf("%s %f\n", cnt->name, cnt->time);
 }
 
 int parse_strace_line(const char *line, syscall_stats *s_stats) {
@@ -69,13 +69,19 @@ void print_top_syscalls(syscall_stats *s_stats, int n) {
     qsort(s_stats->stats, s_stats->count, sizeof(syscall_stat), cmp);
 
     // debug
-    printf("------------------------------------------------\n");
-    for (int i = 0; i < s_stats->count; i++) {
+    // printf("------------------------------------------------\n");
+    /*for (int i = 0; i < s_stats->count; i++) {
         printf("%s %f\n", s_stats->stats[i].name, s_stats->stats[i].time);
     }
     printf("debug end\n");
+    */
+    double cnt = 0.0;
+    double total = s_stats->total_time;
+    printf("total == %f\n", total);
     for (int i = 0; i < n; i++) {
-        printf("%s (%d%%)\n", s_stats->stats[i].name, (int)(s_stats->stats[i].time / s_stats->total_time));
+        cnt = s_stats->stats[i].time;
+        printf("cnt == %f\n", cnt);
+        printf("%s (%d%%)\n", s_stats->stats[i].name, (int)(cnt / total));
     }
 }
 
