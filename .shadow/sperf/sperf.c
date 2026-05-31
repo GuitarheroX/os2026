@@ -70,7 +70,7 @@ int cmp(const void *a, const void *b) {
 
 void print_top_syscalls(syscall_stats *s_stats, int n) {
     int top_count = (n < s_stats->count) ? n : s_stats->count;
-    qsort(s_stats->stats, top_count, sizeof(syscall_stat), cmp);
+    qsort(s_stats->stats, s_stats->count, sizeof(syscall_stat), cmp);
 
     // debug
      printf("------------------------------------------------\n");
