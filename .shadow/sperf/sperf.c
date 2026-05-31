@@ -28,6 +28,8 @@ void add_syscall(syscall_stats *s_stats, const char *name, double time) {
     cnt->time = time;
     s_stats->count++;
     s_stats->total_time += time;
+    // debug
+    printf("%s %f\n", cnt->name, cnt->time);
 }
 
 int parse_strace_line(const char *line, syscall_stats *s_stats) {
@@ -46,7 +48,7 @@ int parse_strace_line(const char *line, syscall_stats *s_stats) {
                 s_stats->count++;
                 s_stats->total_time += time;
                 // debug
-                printf("total_time = %f\n", s_stats->total_time);
+                // printf("total_time = %f\n", s_stats->total_time);
                 return 0;
             }
         }
