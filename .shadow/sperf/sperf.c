@@ -70,7 +70,7 @@ void print_top_syscalls(syscall_stats *s_stats, int n) {
 
     // debug
     for (int i = 0; i < s_stats->count; i++) {
-        printf("%s %f\n", s_stats_stats[i].name, s_stats->stats[i].time);
+        printf("%s %f\n", s_stats->stats[i].name, s_stats->stats[i].time);
     }
     printf("debug end\n");
     for (int i = 0; i < n; i++) {
