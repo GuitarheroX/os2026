@@ -1,5 +1,4 @@
 #include <unistd.h>
-#include <math.h>
 #include <time.h>
 #include <fcntl.h>
 #include <stdio.h>
@@ -67,7 +66,7 @@ void print_top_syscalls(syscall_stats *s_stats, int n) {
     qsort(s_stats->stats, s_stats->count, sizeof(syscall_stat), cmp);
 
     for (int i = 0; i < n; i++) {
-        printf("%s (%d%%)\n", s_stats->stats[i].name, (int)round(s_stats->stats[i].time / s_stats->total_time));
+        printf("%s (%d%%)\n", s_stats->stats[i].name, (int)(s_stats->stats[i].time / s_stats->total_time));
     }
 }
 
