@@ -171,6 +171,7 @@ int main(int argc, char *argv[]) {
         char line_buf[BUFSIZ];
         size_t line_len = 0;
         ssize_t n;
+        double elapsed = 0.0;
         
         syscall_stats s_stats;
         s_stats.count = 0;
@@ -190,7 +191,7 @@ int main(int argc, char *argv[]) {
                 }
             }   
             gettimeofday(&now, NULL);
-            double elapsed = (now.tv_sec - last_print.tv_sec) + (now.tv_usec - last_print.tv_usec) / 1e6;
+            elapsed = (now.tv_sec - last_print.tv_sec) + (now.tv_usec - last_print.tv_usec) / 1e6;
             if (elapsed >= 0.1) {
                 print_top_syscalls(&s_stats, TOP_N);
                 last_print = now;
