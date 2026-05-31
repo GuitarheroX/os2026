@@ -22,7 +22,7 @@ typedef struct {
     double total_time;
 } syscall_stats;
 
-int parse_strace_line(const char *line) {
+int parse_strace_line(const char *line, syscall_stats *s_stats) {
     char name[64];
     double time;
 
@@ -30,15 +30,42 @@ int parse_strace_line(const char *line) {
     char *time_ptr = strstr(line, "<");
     if (time_ptr && sscanf(time_ptr, "<%lf>", &time) == 1) {
         // 处理 name 和 time
-        printf("%s %f\n", name, time);
+        for (int i = 0; i < s_stats->count; i++) {
+            if (strcmp(s_stats->stats[i].name, name) == 0) {
+                s_stats->stats[i].time += time;
+                s_stats->total_time += time;
+                return 0;
+            }
+        }
+        add_syscall(s_stats, name, time);
+        return 0;
     }
+    perror("No time info available");
+    return -1;
 
 }
 
-void add_syscall(syscall_stats *stats, const char *name, double time) {
+void add_syscall(syscall_stats *s_stats, const char *name, double time) {
+    syscall_stat * cnt = s_stats->stats[s_stats->count++];
+    strcpy(cnt->name, name);
+    cnt->time = time;
+    s_stats->total_time += time;
 }
 
-void print_top_syscalls(syscall_stats *stats, int n) {
+int cmp(const void *a, const void *b) {
+    const syscall_stat *sa = (const syscall_stat *)a;
+    const syscall_stat *sb = (const syscall_stat *)b;
+    if (sb->time > sa->time) return 1;
+    if (sb->time < sa->time) return -1;
+    return 0;
+}
+
+void print_top_syscalls(syscall_stats *s_stats, int n) {
+    qsort(s_stats->stats, s_stats->count, sizeof(syscall_stat), cmp);
+
+    for (itn i = 0; i < n; i++) {
+        printf("%s (%d%%)\n", s_stats->stats[i].name, s_stats->stats[i].time / s_stats->total_time);
+    }
 }
 
 char *find_in_path(const char *file) {
@@ -143,6 +170,11 @@ int main(int argc, char *argv[]) {
         if (n < 0) {
             perror("read");
         }
+
+        syscall_stats s_stats;
+        s_stats.count = 0;
+        s_stats.total_time = 0.0;
+        print_top_syscalls(&s_stats, TOP_N);
     }
     close(pipefd[0]);
     return 0;
