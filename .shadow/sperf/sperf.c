@@ -39,7 +39,7 @@ int parse_strace_line(const char *line, syscall_stats *s_stats) {
     if (time_ptr && sscanf(time_ptr, "<%lf>", &time) == 1) {
         // 处理 name 和 time
         // debug
-        printf("%s%l", name, time);
+        printf("%s%f\n", name, time);
         for (int i = 0; i < s_stats->count; i++) {
             if (strcmp(s_stats->stats[i].name, name) == 0) {
                 s_stats->stats[i].time += time;
