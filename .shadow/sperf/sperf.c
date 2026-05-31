@@ -187,11 +187,11 @@ int main(int argc, char *argv[]) {
                     line_buf[line_len++] = buf[i];
                 }
                 time_t now = time(NULL);
-                if (now - last_print >= 0.1) {
-                    print_top_syscalls(&s_stats, TOP_N);
-                    last_print = now;
-                }
             }   
+            if (now - last_print >= 0.1) {
+                print_top_syscalls(&s_stats, TOP_N);
+                last_print = now;
+            }
         }
         if (n < 0) {
             perror("read");
