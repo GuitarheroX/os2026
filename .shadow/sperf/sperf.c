@@ -73,12 +73,12 @@ void print_top_syscalls(syscall_stats *s_stats, int n) {
     qsort(s_stats->stats, top_count, sizeof(syscall_stat), cmp);
 
     // debug
-    printf("------------------------------------------------\n");
+    /* printf("------------------------------------------------\n");
     for (int i = 0; i < s_stats->count; i++) {
         printf("%s %f\n", s_stats->stats[i].name, s_stats->stats[i].time);
     }
     printf("debug end\n");
-    
+    */
     double cnt = 0.0;
     double total = s_stats->total_time;
     for (int i = 0; i < top_count; i++) {
@@ -181,7 +181,7 @@ int main(int argc, char *argv[]) {
                 if (buf[i] == '\n') {
                     line_buf[line_len] = '\0';
                     // debug
-                    printf("%s\n", line_buf);
+                    // printf("%s\n", line_buf);
                     parse_strace_line(line_buf, &s_stats);
                     line_len = 0;
                 }
@@ -199,7 +199,6 @@ int main(int argc, char *argv[]) {
         if (n < 0) {
             perror("read");
         }
-        print_top_syscalls(&s_stats, TOP_N);
     }
     close(pipefd[0]);
     return 0;
