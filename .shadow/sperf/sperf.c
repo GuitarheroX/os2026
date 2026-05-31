@@ -11,6 +11,9 @@
 #define MAX_SYSCALLS 1024
 #define TOP_N 5
 
+struct timeval last_print = {0, 0};
+struct timecal now;
+
 typedef struct {
     char name[64];
     double time;
@@ -187,8 +190,9 @@ int main(int argc, char *argv[]) {
                     line_buf[line_len++] = buf[i];
                 }
             }   
-            time_t now = time(NULL);
-            if (now - last_print >= 0.1) {
+            gettimeofday(&now, NULL);
+            double elapsed = (now.tv_sec - last_print.tv_sec) + (now.tv_usec - last_print.tv_usec) / 1e6;
+            if (elapsed >= 0.1) {
                 print_top_syscalls(&s_stats, TOP_N);
                 last_print = now;
             }
