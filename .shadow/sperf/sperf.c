@@ -171,7 +171,6 @@ int main(int argc, char *argv[]) {
         char line_buf[BUFSIZ];
         size_t line_len = 0;
         ssize_t n;
-        time_t last_print = 0;
         
         syscall_stats s_stats;
         s_stats.count = 0;
