@@ -1,5 +1,5 @@
 #include <unistd.h>
-#include <time.h>
+#include <sys/time.h>
 #include <fcntl.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -10,6 +10,9 @@
 
 #define MAX_SYSCALLS 1024
 #define TOP_N 5
+
+struct timeval last_print = {0, 0};
+struct timeval now;
 
 typedef struct {
     char name[64];
@@ -22,7 +25,16 @@ typedef struct {
     double total_time;
 } syscall_stats;
 
-int parse_strace_line(const char *line) {
+void add_syscall(syscall_stats *s_stats, const char *name, double time) {
+    syscall_stat *cnt = &s_stats->stats[s_stats->count++];
+    strcpy(cnt->name, name);
+    cnt->time = time;
+    s_stats->total_time += time;
+    // debug
+    // printf("%s %f\n", cnt->name, cnt->time);
+}
+
+int parse_strace_line(const char *line, syscall_stats *s_stats) {
     char name[64];
     double time;
 
@@ -30,15 +42,52 @@ int parse_strace_line(const char *line) {
     char *time_ptr = strstr(line, "<");
     if (time_ptr && sscanf(time_ptr, "<%lf>", &time) == 1) {
         // 处理 name 和 time
-        printf("%s %f\n", name, time);
+        // debug
+        // printf("%s%f\n", name, time);
+        for (int i = 0; i < s_stats->count; i++) {
+            if (strcmp(s_stats->stats[i].name, name) == 0) {
+                s_stats->stats[i].time += time;
+                s_stats->total_time += time;
+                // debug
+                // printf("total_time = %f\n", s_stats->total_time);
+                return 0;
+            }
+        }
+        add_syscall(s_stats, name, time);
+        return 0;
     }
+    return -1;
 
 }
 
-void add_syscall(syscall_stats *stats, const char *name, double time) {
+int cmp(const void *a, const void *b) {
+    const syscall_stat *sa = (const syscall_stat *)a;
+    const syscall_stat *sb = (const syscall_stat *)b;
+    if (sb->time > sa->time) return 1;
+    if (sb->time < sa->time) return -1;
+    return 0;
 }
 
-void print_top_syscalls(syscall_stats *stats, int n) {
+void print_top_syscalls(syscall_stats *s_stats, int n) {
+    int top_count = (n < s_stats->count) ? n : s_stats->count;
+    qsort(s_stats->stats, s_stats->count, sizeof(syscall_stat), cmp);
+
+    // debug
+    /* printf("------------------------------------------------\n");
+    for (int i = 0; i < s_stats->count; i++) {
+        printf("%s %f\n", s_stats->stats[i].name, s_stats->stats[i].time);
+    }
+    printf("debug end\n");
+    */
+    double cnt = 0.0;
+    double total = s_stats->total_time;
+    for (int i = 0; i < top_count; i++) {
+        cnt = s_stats->stats[i].time;
+        printf("%s (%d%%)\n", s_stats->stats[i].name, (int)(cnt * 100 / total));
+    }
+    for (int i = 0; i < 80; i++) {
+        putchar('\0');   
+    }
 }
 
 char *find_in_path(const char *file) {
@@ -122,26 +171,39 @@ int main(int argc, char *argv[]) {
         char line_buf[BUFSIZ];
         size_t line_len = 0;
         ssize_t n;
-        time_t last_print = 0;
+        int printed = 0;
+        double elapsed = 0.0;
+        
+        syscall_stats s_stats;
+        s_stats.count = 0;
+        s_stats.total_time = 0.0;
+        
         while ((n = read(pipefd[0], buf, BUFSIZ)) > 0) {
             for (ssize_t i = 0; i < n; i++) {
                 if (buf[i] == '\n') {
                     line_buf[line_len] = '\0';
-                    parse_strace_line(line_buf);
+                    // debug
+                    // printf("%s\n", line_buf);
+                    parse_strace_line(line_buf, &s_stats);
                     line_len = 0;
                 }
                 else if (line_len < sizeof(line_buf) - 1) {
                     line_buf[line_len++] = buf[i];
                 }
-                time_t now = time(NULL);
-                if (now - last_print >= 0.1) {
-                    // 打印信息
-                    last_print = now;
-                }
             }   
+            gettimeofday(&now, NULL);
+            elapsed = (now.tv_sec - last_print.tv_sec) + (now.tv_usec - last_print.tv_usec) / 1e6;
+            if (elapsed >= 0.1) {
+                print_top_syscalls(&s_stats, TOP_N);
+                last_print = now;
+                printed = 1;
+            }
         }
         if (n < 0) {
             perror("read");
+        }
+        if (!printed) {
+            print_top_syscalls(&s_stats, TOP_N);
         }
     }
     close(pipefd[0]);
