@@ -181,7 +181,7 @@ int main(int argc, char *argv[]) {
                 if (buf[i] == '\n') {
                     line_buf[line_len] = '\0';
                     // debug
-                    // printf("%s\n", line_buf);
+                    printf("%s\n", line_buf);
                     parse_strace_line(line_buf, &s_stats);
                     line_len = 0;
                 }
