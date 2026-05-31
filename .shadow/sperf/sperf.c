@@ -45,7 +45,6 @@ int parse_strace_line(const char *line, syscall_stats *s_stats) {
         for (int i = 0; i < s_stats->count; i++) {
             if (strcmp(s_stats->stats[i].name, name) == 0) {
                 s_stats->stats[i].time += time;
-                s_stats->count++;
                 s_stats->total_time += time;
                 // debug
                 // printf("total_time = %f\n", s_stats->total_time);
