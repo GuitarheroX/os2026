@@ -187,7 +187,7 @@ int main(int argc, char *argv[]) {
                 }
                 time_t now = time(NULL);
                 if (now - last_print >= 0.1) {
-                    // 打印信息
+                    print_top_syscalls(&s_stats, TOP_N);
                     last_print = now;
                 }
             }   
@@ -195,7 +195,6 @@ int main(int argc, char *argv[]) {
         if (n < 0) {
             perror("read");
         }
-        print_top_syscalls(&s_stats, TOP_N);
     }
     close(pipefd[0]);
     return 0;
