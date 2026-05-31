@@ -171,6 +171,7 @@ int main(int argc, char *argv[]) {
         char line_buf[BUFSIZ];
         size_t line_len = 0;
         ssize_t n;
+        int printed = 0;
         double elapsed = 0.0;
         
         syscall_stats s_stats;
@@ -195,12 +196,13 @@ int main(int argc, char *argv[]) {
             if (elapsed >= 0.1) {
                 print_top_syscalls(&s_stats, TOP_N);
                 last_print = now;
+                printed = 1;
             }
         }
         if (n < 0) {
             perror("read");
         }
-        if (elapsed < 0.1) {
+        if (!printed) {
             print_top_syscalls(&s_stats, TOP_N);
         }
     }
