@@ -22,6 +22,13 @@ typedef struct {
     double total_time;
 } syscall_stats;
 
+void add_syscall(syscall_stats *s_stats, const char *name, double time) {
+    syscall_stat * cnt = s_stats->stats[s_stats->count++];
+    strcpy(cnt->name, name);
+    cnt->time = time;
+    s_stats->total_time += time;
+}
+
 int parse_strace_line(const char *line, syscall_stats *s_stats) {
     char name[64];
     double time;
@@ -45,13 +52,6 @@ int parse_strace_line(const char *line, syscall_stats *s_stats) {
 
 }
 
-void add_syscall(syscall_stats *s_stats, const char *name, double time) {
-    syscall_stat * cnt = s_stats->stats[s_stats->count++];
-    strcpy(cnt->name, name);
-    cnt->time = time;
-    s_stats->total_time += time;
-}
-
 int cmp(const void *a, const void *b) {
     const syscall_stat *sa = (const syscall_stat *)a;
     const syscall_stat *sb = (const syscall_stat *)b;
@@ -63,7 +63,7 @@ int cmp(const void *a, const void *b) {
 void print_top_syscalls(syscall_stats *s_stats, int n) {
     qsort(s_stats->stats, s_stats->count, sizeof(syscall_stat), cmp);
 
-    for (itn i = 0; i < n; i++) {
+    for (int i = 0; i < n; i++) {
         printf("%s (%d%%)\n", s_stats->stats[i].name, s_stats->stats[i].time / s_stats->total_time);
     }
 }
@@ -150,11 +150,16 @@ int main(int argc, char *argv[]) {
         size_t line_len = 0;
         ssize_t n;
         time_t last_print = 0;
+        
+        syscall_stats s_stats;
+        s_stats.count = 0;
+        s_stats.total_time = 0.0;
+        
         while ((n = read(pipefd[0], buf, BUFSIZ)) > 0) {
             for (ssize_t i = 0; i < n; i++) {
                 if (buf[i] == '\n') {
                     line_buf[line_len] = '\0';
-                    parse_strace_line(line_buf);
+                    parse_strace_line(line_buf, &s_stats);
                     line_len = 0;
                 }
                 else if (line_len < sizeof(line_buf) - 1) {
@@ -170,10 +175,6 @@ int main(int argc, char *argv[]) {
         if (n < 0) {
             perror("read");
         }
-
-        syscall_stats s_stats;
-        s_stats.count = 0;
-        s_stats.total_time = 0.0;
         print_top_syscalls(&s_stats, TOP_N);
     }
     close(pipefd[0]);
