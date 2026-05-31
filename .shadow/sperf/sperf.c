@@ -12,7 +12,7 @@
 #define TOP_N 5
 
 struct timeval last_print = {0, 0};
-struct timecal now;
+struct timeval now;
 
 typedef struct {
     char name[64];
