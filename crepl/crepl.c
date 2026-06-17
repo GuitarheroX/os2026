@@ -7,9 +7,10 @@
 #include <string.h>
 
 int expr_num = 0;
+char src[128], so[128];
 
 // Compile a function definition and load it
-bool compile_and_load_function(const char* function_def, const char* src) {
+bool compile_and_load_function(const char* function_def) {
     // 写入 .c
     FILE *src_fp = fopen(src, "a");
     if (src_fp == NULL) {
@@ -23,7 +24,7 @@ bool compile_and_load_function(const char* function_def, const char* src) {
 }
 
 // Evaluate an expression
-bool evaluate_expression(const char* expression, int* result, char *src, char* so) {
+bool evaluate_expression(const char* expression, int* result) {
     FILE *src_fp = fopen(src, "a");
     if (src_fp == NULL) {
         perror("Failed to open file");
@@ -61,7 +62,6 @@ bool evaluate_expression(const char* expression, int* result, char *src, char* s
 int main() {
     char template[] = "/tmp/funcXXXXXX";
     int fd = mkstemp(template);
-    char src[128], so[128];
     snprintf(src, sizeof(src), "%s.c", template);
     snprintf(so, sizeof(so), "%s.so", template);
     close(fd);
@@ -81,7 +81,7 @@ int main() {
 
         if (strncmp(line, "int", 3) == 0) {
             // 函数
-            if (compile_and_load_function(line, src)) {
+            if (compile_and_load_function(line)) {
                 printf("%s\n", "OK.");
             }
             else {
@@ -91,7 +91,7 @@ int main() {
         else {
             // 表达式或其他
             int result = 0;
-            if (evaluate_expression(line, &result, src, so)) {
+            if (evaluate_expression(line, &result)) {
                 printf("= %d\n", result);
             }
             else {
