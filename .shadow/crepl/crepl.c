@@ -21,7 +21,7 @@ bool compile_and_load_function(const char* function_def) {
 
     // 写入 .c
     FILE *src_fp = fopen(src, "w");
-    fprintf(src_fp, function_def);
+    fprintf(src_fp, "%s", function_def);
     fclose(src_fp);
     
     pid_t pid = fork();
@@ -36,7 +36,7 @@ bool compile_and_load_function(const char* function_def) {
        int status;
        waitpid(pid, &status, 0);
 
-       void *handle = dlopen(so, RTLD_GLOBAL);
+       void *_ = dlopen(so, RTLD_GLOBAL);
        return true;
     }
     return false;
@@ -53,7 +53,7 @@ bool evaluate_expression(const char* expression, int* result) {
     unlink(template);
 
     FILE *src_fp = fopen(src, "w");
-    char func_name = "__expr_wrapper_";
+    char func_name[] = "__expr_wrapper_";
     snprintf(func_name + str(func_name), sizeof(func_name) - strlen(func_name), "%d", expr_num);
     fprintf(src_fp, "int %s() { return %s; }", func_name, expression);
     fclose(src_fp);
