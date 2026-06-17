@@ -30,7 +30,7 @@ bool evaluate_expression(const char* expression, int* result, char *src, char* s
         return false;
     }
     char func_name[128];
-    sprintf(func_name, "__expr_wrapper_%d", expr_num++);
+    sprintf(func_name, "__expr_wrapper_%d\0", expr_num++);
     fprintf(src_fp, "int %s() { return %s; }\n", func_name, expression);
     fflush(src_fp);
     fclose(src_fp);
