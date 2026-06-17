@@ -1,95 +1,105 @@
 #include <stdio.h>
-#include <stdlib.h>
-#include <unistd.h>
-#include <sys/wait.h>
-#include <stdbool.h>
-#include <dlfcn.h>
 #include <string.h>
+#include <stdlib.h>
+#include <dlfcn.h>
 
-int expr_num = 0;
+int wrapper_count = 0;
 
-// Compile a function definition and load it
-bool compile_and_load_function(const char* function_def, const char* src) {
-    // 写入 .c
-    FILE *src_fp = fopen(src, "a");
-    if (src_fp == NULL) {
-        perror("Failed to open file");
-        return false;
+int main(int argc, char *argv[]) {
+    static char line[4096];
+    char cmd[4096];
+    char temp_so_path[] = "/tmp/crepl_so.XXXXXX";
+    char temp_src_path[] = "/tmp/crepl_src.XXXXXX";
+
+    // 分配临时文件
+    int fd = mkstemp(temp_so_path);
+    if (fd == -1) {
+        perror("mkstemp failed");
+        return EXIT_FAILURE;
     }
-    fprintf(src_fp, "%s", function_def);
-    fflush(src_fp);
-    fclose(src_fp);
-    return true;
-}
-
-// Evaluate an expression
-bool evaluate_expression(const char* expression, int* result, char *src, char* so) {
-    FILE *src_fp = fopen(src, "a");
-    if (src_fp == NULL) {
-        perror("Failed to open file");
-        return false;
-    }
-    char func_name[128];
-    sprintf(func_name, "__expr_wrapper_%d", expr_num++);
-    fprintf(src_fp, "int %s() { return %s; }", func_name, expression);
-    fflush(src_fp);
-    fclose(src_fp);
-
-    pid_t pid = fork();
-    if (pid == 0) {
-        char *argv[] = {"gcc", "-shared", "-fPIC", "-o", so, src, NULL};
-        execvp("gcc", argv);
-        perror("gcc");
-        exit(1);
-    }
-    else {
-        int status;
-        waitpid(pid, &status, 0);
-
-        void *handle = dlopen(so, RTLD_NOW | RTLD_GLOBAL);
-        int (*func)() = dlsym(handle, func_name);
-        *result = func();
-        return true;
+    fd = mkstemp(temp_src_path);
+    if (fd == -1) {
+        perror("mkstemp failed");
+        return EXIT_FAILURE;
     }
 
-    return false;
-}
+    // -Wno-implicit-function-declaration   
+    // 用于绕过在调用其他函数场景下的隐式函数定义的检查
+    sprintf(cmd,
+            "gcc -Wno-implicit-function-declaration -xc "
+            "-shared -o %s %s",
+            temp_so_path, temp_src_path);
 
-int main() {
-    char template[] = "/tmp/funcXXXXXX";
-    int fd = mkstemp(template);
-    char src[128], so[128];
-    snprintf(src, sizeof(src), "%s.c", template);
-    snprintf(so, sizeof(so), "%s.so", template);
-    close(fd);
-    unlink(template);
-    
-    while (true) {
-        char line[128];
+    while (1) {
         printf("crepl> ");
         fflush(stdout);
-        if (fgets(line, sizeof(line), stdin) == NULL) {
+
+        if (!fgets(line, sizeof(line), stdin)) {
             break;
         }
 
-        if (strncmp(line, "int", 3) == 0) {
-            // 函数
-            if (compile_and_load_function(line, src)) {
-                printf("%s\n", "OK.");
-            }
-            else {
-                perror("Failed to compile or load function: ");
-            }
+        // To be implemented.
+        // printf("Got %zu chars.\n", strlen(line));
+
+        int is_function = strncmp(line, "int ", strlen("int ")) == 0;
+        char func_name[256];
+        char func[4096];
+
+        if (is_function) {
+            strcpy(func, line);
+        } else {
+            sprintf(func_name, "__expr_wrapper_%d", wrapper_count++);
+            sprintf(func, "int %s() { return %s; }", func_name, line);
         }
-        else {
-            // 表达式或其他
-            int result = 0;
-            if (evaluate_expression(line, &result, src, so)) {
-                printf("= %d\n", result);
-            }
-            else {
-                perror("Failed to evaluate expression: ");
-            }
+
+        // 将函数写入临时文件
+        // 如果是表达式，就编译成 so 然后 dlopen 执行 expr wrapper
+        FILE* file = fopen(temp_src_path, "a");
+        if (file == NULL) {
+            perror("Failed to open file");
+            return EXIT_FAILURE;
         }
+        fprintf(file, "%s\n", func);
+        fflush(file);
+        fclose(file);
+
+        // 只是添加函数定义的话不需要编译
+        if (is_function) {
+            printf("OK.\n");
+            continue;
+        }
+
+        // 编译成 so
+        system(cmd);
+
+        void *handle;
+        int (*function)(void);
+        char *error;
+        int eval_result;
+
+        // 加载共享库
+        handle = dlopen(temp_so_path, RTLD_LAZY);
+        if (!handle) {
+            fprintf(stderr, "%s\n", dlerror());
+            return 1;
+        }
+
+        // 清除现有的错误
+        dlerror();
+        
+        *(void **) (&function) = dlsym(handle, func_name);
+        if ((error = dlerror()) != NULL)  {
+            fprintf(stderr, "%s\n", error);
+            dlclose(handle);
+            return 1;
+        }
+
+        // 调用函数
+        eval_result = function();
+
+        // 关闭共享库
+        dlclose(handle);
+
+        printf("= %d.\n", eval_result);
     }
 }
