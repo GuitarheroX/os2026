@@ -80,6 +80,7 @@ bool evaluate_expression(const char* expression, int* result) {
 
 int main() {
     while (True) {
+        char line[128];
         printf("crepl> ");
         fflush(stdout);
         fgets(line, sizeof(line), stdin);
