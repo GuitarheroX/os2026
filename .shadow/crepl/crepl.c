@@ -73,7 +73,7 @@ int main() {
         }
         size_t len = strlen(line);
         if (len > 0 && line[len-1] == '\n') {
-            line[len-1] == '\0';
+            line[len-1] = '\0';
         }
 
         if (strncmp(line, "int", 3) == 0) {
