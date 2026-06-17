@@ -48,7 +48,7 @@ bool evaluate_expression(const char* expression, int* result, char *src, char* s
 
         void *handle = dlopen(so, RTLD_NOW | RTLD_GLOBAL);
         // int (*func)() = dlsym(handle, func_name);
-        *(void**)(&function) = dlsym(handle, func_name);
+        *(void**)(&func) = dlsym(handle, func_name);
         *result = func();
         return true;
     }
