@@ -51,6 +51,7 @@ bool evaluate_expression(const char* expression, int* result, char *src, char* s
         int (*func)();
         *(void**)(&func) = dlsym(handle, func_name);
         *result = func();
+        dlclose(handle);
         return true;
     }
 
