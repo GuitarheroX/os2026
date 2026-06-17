@@ -17,6 +17,7 @@ bool compile_and_load_function(const char* function_def, const char* src) {
         return false;
     }
     fprintf(src_fp, "%s", function_def);
+    fflush(src_fp);
     fclose(src_fp);
     return true;
 }
@@ -31,6 +32,7 @@ bool evaluate_expression(const char* expression, int* result, char *src, char* s
     char func_name[128];
     sprintf(func_name, "__expr_wrapper_%d", expr_num++);
     fprintf(src_fp, "int %s() { return %s; }", func_name, expression);
+    fflush(src_fp);
     fclose(src_fp);
 
     pid_t pid = fork();
