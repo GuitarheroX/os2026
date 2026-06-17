@@ -79,13 +79,13 @@ bool evaluate_expression(const char* expression, int* result) {
 }
 
 int main() {
-    while (True) {
+    while (true) {
         char line[128];
         printf("crepl> ");
         fflush(stdout);
         fgets(line, sizeof(line), stdin);
 
-        if (strncmp(str, "int", 3) == 0) {
+        if (strncmp(line, "int", 3) == 0) {
             // 函数
             if (compile_and_load_function(line)) {
                 printf("%s\n", "OK.");
