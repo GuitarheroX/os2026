@@ -69,7 +69,7 @@ bool evaluate_expression(const char* expression, int* result) {
         int status;
         waitpid(pid, &status, 0);
 
-        void *handle = dlopen(so);
+        void *handle = dlopen(so, RTLD_NOW);
         int (*func)() = dlsym(handle, func_name);
         *result = func();
         return true;
