@@ -10,16 +10,24 @@ int expr_num = 0;
 
 // Compile a function definition and load it
 bool compile_and_load_function(const char* function_def) {
+    // 生成 .c .so 文件的名字
     char template[] = "/tmp/funcXXXXXX";
     int fd = mkstemp(template);
-    fprintf(fd, function_def);
-    fclose(fd);
+    char src[128], so[128];
+    snprintf(src, sizeof(src), "%s.c", template);
+    snprintf(so, sizeof(so), "%s.so", template);
+    close(fd);
+    unlink(template);
+
+    // 写入 .c
+    FILE *src_fp = fopen(src, "w");
+    fprintf(src_fp, function_def);
+    fclose(src_fp);
     
-    char name[128];
-    snprintf(name, sizeof(name), "%s.so", template);
     pid_t pid = fork();
     if (pid == 0) {
-        char *argv[] = {"gcc", "-shared", "-fPIC", "-o", name, template, NULL};
+        // 编译为 .so
+        char *argv[] = {"gcc", "-shared", "-fPIC", "-o", so, src, NULL};
         execvp("gcc", argv);
         perror("gcc");
         exit(1);
@@ -28,7 +36,6 @@ bool compile_and_load_function(const char* function_def) {
        int status;
        waitpid(pid, &status, 0);
 
-       // load
        void *handle = dlopen(name, RTLD_GLOBAL);
        return true;
     }
@@ -37,18 +44,23 @@ bool compile_and_load_function(const char* function_def) {
 
 // Evaluate an expression
 bool evaluate_expression(const char* expression, int* result) {
-    char func_name = "__expr_wrapper_";
-    snprintf(func_name + str(func_name), sizeof(func_name) - strlen(func_name), "%d", expr_num);
     char template[] = "/tmp/exprXXXXXX";
     int fd = mkstemp(template);
-    fprintf(fd, "int %s() { return %s; }", func_name, expression);
-    fclose(fd);
+    char src[128], so[128];
+    snprintf(src, sizeof(src), "%s.c", template);
+    snprintf(so, sizeof(so), "%s.so", template);
+    close(fd);
+    unlink(template);
 
-    char name[128];
-    snprintf(name, sizeof(name), "%s.so", template);
+    FILE *src_fp = fopen(src, "w");
+    char func_name = "__expr_wrapper_";
+    snprintf(func_name + str(func_name), sizeof(func_name) - strlen(func_name), "%d", expr_num);
+    fprintf(src_fp, "int %s() { return %s; }", func_name, expression);
+    fclose(src_fp);
+
     pid_t pid = fork();
     if (pid == 0) {
-        char *argv[] = {"gcc", "-shared", "-fPIC", "-o", name, template, NULL};
+        char *argv[] = {"gcc", "-shared", "-fPIC", "-o", so, src, NULL};
         execvp("gcc", argv);
         perror("gcc");
         exit(1);
@@ -57,7 +69,7 @@ bool evaluate_expression(const char* expression, int* result) {
         int status;
         waitpid(pid, &status, 0);
 
-        void *handle = dlopen(name);
+        void *handle = dlopen(so);
         void (*func)() = dlsys(handle, func_name);
         *result = func();
         return true;
