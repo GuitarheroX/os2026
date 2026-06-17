@@ -22,7 +22,7 @@ bool compile_and_load_function(const char* function_def, const char* src) {
 }
 
 // Evaluate an expression
-bool evaluate_expression(const char* expression, int* result, const char *src, const char* so) {
+bool evaluate_expression(const char* expression, int* result, char *src, char* so) {
     FILE *src_fp = fopen(src, "a");
     if (src_fp == NULL) {
         perror("Failed to open file");
