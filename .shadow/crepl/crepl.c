@@ -36,7 +36,7 @@ bool compile_and_load_function(const char* function_def) {
        int status;
        waitpid(pid, &status, 0);
 
-       void *_ = dlopen(so, RTLD_GLOBAL);
+       void *_ = dlopen(so, RTLD_NOW | RTLD_GLOBAL);
        return true;
     }
     return false;
@@ -69,7 +69,7 @@ bool evaluate_expression(const char* expression, int* result) {
         int status;
         waitpid(pid, &status, 0);
 
-        void *handle = dlopen(so, RTLD_NOW);
+        void *handle = dlopen(so, RTLD_NOW | RTLD_GLOBAL);
         int (*func)() = dlsym(handle, func_name);
         *result = func();
         return true;
