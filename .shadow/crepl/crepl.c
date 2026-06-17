@@ -53,7 +53,7 @@ bool evaluate_expression(const char* expression, int* result) {
     unlink(template);
 
     FILE *src_fp = fopen(src, "w");
-    char func_name[] = "__expr_wrapper_";
+    char func_name[128] = "__expr_wrapper_";
     snprintf(func_name + strlen(func_name), sizeof(func_name) - strlen(func_name), "%d", expr_num);
     fprintf(src_fp, "int %s() { return %s; }", func_name, expression);
     fclose(src_fp);
