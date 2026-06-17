@@ -54,7 +54,7 @@ bool evaluate_expression(const char* expression, int* result) {
 
     FILE *src_fp = fopen(src, "w");
     char func_name[] = "__expr_wrapper_";
-    snprintf(func_name + str(func_name), sizeof(func_name) - strlen(func_name), "%d", expr_num);
+    snprintf(func_name + strlen(func_name), sizeof(func_name) - strlen(func_name), "%d", expr_num);
     fprintf(src_fp, "int %s() { return %s; }", func_name, expression);
     fclose(src_fp);
 
@@ -83,7 +83,9 @@ int main() {
         char line[128];
         printf("crepl> ");
         fflush(stdout);
-        fgets(line, sizeof(line), stdin);
+        if (fgets(line, sizeof(line), stdin) == NULL) {
+            break;
+        }
 
         if (strncmp(line, "int", 3) == 0) {
             // 函数
