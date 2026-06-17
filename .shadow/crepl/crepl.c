@@ -16,7 +16,7 @@ bool compile_and_load_function(const char* function_def, const char* src) {
         perror("Failed to open file");
         return false;
     }
-    fprintf(src_fp, "%s", function_def);
+    fprintf(src_fp, "%s\n", function_def);
     fflush(src_fp);
     fclose(src_fp);
     return true;
@@ -31,7 +31,7 @@ bool evaluate_expression(const char* expression, int* result, char *src, char* s
     }
     char func_name[128];
     sprintf(func_name, "__expr_wrapper_%d", expr_num++);
-    fprintf(src_fp, "int %s() { return %s; }", func_name, expression);
+    fprintf(src_fp, "int %s() { return %s; }\n", func_name, expression);
     fflush(src_fp);
     fclose(src_fp);
 
@@ -70,6 +70,10 @@ int main() {
         fflush(stdout);
         if (fgets(line, sizeof(line), stdin) == NULL) {
             break;
+        }
+        size_t len = strlen(line);
+        if (len > 0 && line[len-1] == '\n') {
+            line[len-1] == '\0';
         }
 
         if (strncmp(line, "int", 3) == 0) {
