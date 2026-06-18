@@ -38,7 +38,7 @@ bool compile_and_load_function(const char* function_def) {
         int status;
         waitpid(pid, &status, 0);
 
-        void *_ = dlopen(so, RTLD_NOW | RTLD_GLOBAL);
+        dlopen(so, RTLD_NOW | RTLD_GLOBAL);
         return true;
     }
 
