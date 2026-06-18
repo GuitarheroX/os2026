@@ -29,7 +29,7 @@ bool compile_and_load_function(const char* function_def) {
 
     pid_t pid = fork();
     if (pid == 0) {
-        char *argv[] = {"gcc", "-shared", "-fPIC", "-o", so, src, NULL};
+        char *argv[] = {"gcc", "-shared", "-fPIC", "-Wno-implicit-function-declaration", "-o", so, src, NULL};
         execvp("gcc", argv);
         perror("gcc");
         exit(1);
@@ -68,7 +68,7 @@ bool evaluate_expression(const char* expression, int* result) {
 
     pid_t pid = fork();
     if (pid == 0) {
-        char *argv[] = {"gcc", "-shared", "-fPIC", "-o", so, src, NULL};
+        char *argv[] = {"gcc", "-shared", "-fPIC", "-Wno-implicit-function-declaration", "-o", so, src, NULL};
         execvp("gcc", argv);
         perror("gcc");
         exit(1);
