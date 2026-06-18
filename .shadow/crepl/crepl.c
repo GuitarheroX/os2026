@@ -82,16 +82,16 @@ bool evaluate_expression(const char* expression, int* result) {
         }
         if (WIFEXITED(status) && WEXITSTATUS(status) == 0) {
             void *handle = dlopen(so, RTLD_NOW | RTLD_GLOBAL);
-            // int (*func)() = dlsym(handle, func_name);
-            int (*func)();
-            *(void**)(&func) = dlsym(handle, func_name);
-            if (func == NULL) {
-                fprintf(stderr, "dlsym failed: %s\n", dlerror());
+            if (handle == NULL) {
+                fprintf(stderr, "dlopen failed: %s\n", dlerror());
                 dlclose(handle);
                 unlink(src);
                 unlink(so);
                 return false;
             }
+            // int (*func)() = dlsym(handle, func_name);
+            int (*func)();
+            *(void**)(&func) = dlsym(handle, func_name);
             *result = func();
             dlclose(handle);
             return true;
