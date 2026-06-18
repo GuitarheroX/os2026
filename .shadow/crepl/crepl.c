@@ -84,9 +84,6 @@ bool evaluate_expression(const char* expression, int* result) {
             void *handle = dlopen(so, RTLD_NOW | RTLD_GLOBAL);
             if (handle == NULL) {
                 fprintf(stderr, "dlopen failed: %s\n", dlerror());
-                dlclose(handle);
-                unlink(src);
-                unlink(so);
                 return false;
             }
             // int (*func)() = dlsym(handle, func_name);
