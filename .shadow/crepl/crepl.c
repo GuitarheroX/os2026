@@ -85,6 +85,13 @@ bool evaluate_expression(const char* expression, int* result) {
             // int (*func)() = dlsym(handle, func_name);
             int (*func)();
             *(void**)(&func) = dlsym(handle, func_name);
+            if (func == NULL) {
+                fprintf(stderr, "dlsym failed: %s\n", dlerror());
+                dlclose(handle);
+                unlink(src);
+                unlink(so);
+                return false;
+            }
             *result = func();
             dlclose(handle);
             return true;
