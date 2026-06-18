@@ -10,6 +10,7 @@ int expr_num = 0;
 
 // Compile a function definition and load it
 bool compile_and_load_function(const char* function_def) {
+    char src[128], so[128];
     char template[] = "/tmp/funcXXXXXX";
     int fd = mkstemp(template);
     snprintf(src, sizeof(src), "%s.c", template);
@@ -46,6 +47,7 @@ bool compile_and_load_function(const char* function_def) {
 
 // Evaluate an expression
 bool evaluate_expression(const char* expression, int* result) {
+    char src[128], so[128];
     char template[] = "/tmp/funcXXXXXX";
     int fd = mkstemp(template);
     snprintf(src, sizeof(src), "%s.c", template);
