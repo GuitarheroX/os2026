@@ -7,11 +7,16 @@
 #include <string.h>
 
 int expr_num = 0;
-char src[128], so[128];
 
 // Compile a function definition and load it
 bool compile_and_load_function(const char* function_def) {
-    // 写入 .c
+    char template[] = "/tmp/funcXXXXXX";
+    int fd = mkstemp(template);
+    snprintf(src, sizeof(src), "%s.c", template);
+    snprintf(so, sizeof(so), "%s.so", template);
+    close(fd);
+    unlink(template);
+
     FILE *src_fp = fopen(src, "a");
     if (src_fp == NULL) {
         perror("Failed to open file");
@@ -20,11 +25,34 @@ bool compile_and_load_function(const char* function_def) {
     fprintf(src_fp, "%s\n", function_def);
     fflush(src_fp);
     fclose(src_fp);
-    return true;
+
+    pid_t pid = fork();
+    if (pid == 0) {
+        char *argv[] = {"gcc", "-shared", "-fPIC", "-o", so, src, NULL};
+        execvp("gcc", argv);
+        perror("gcc");
+        exit(1);
+    }
+    else {
+        int status;
+        waitpid(pid, &status, 0);
+
+        void *_ = dlopen(so, RTLD_NOW | RTLD_GLOBAL);
+        return true;
+    }
+
+    return false;
 }
 
 // Evaluate an expression
 bool evaluate_expression(const char* expression, int* result) {
+    char template[] = "/tmp/funcXXXXXX";
+    int fd = mkstemp(template);
+    snprintf(src, sizeof(src), "%s.c", template);
+    snprintf(so, sizeof(so), "%s.so", template);
+    close(fd);
+    unlink(template);
+
     FILE *src_fp = fopen(src, "a");
     if (src_fp == NULL) {
         perror("Failed to open file");
@@ -60,12 +88,6 @@ bool evaluate_expression(const char* expression, int* result) {
 }
 
 int main() {
-    char template[] = "/tmp/funcXXXXXX";
-    int fd = mkstemp(template);
-    snprintf(src, sizeof(src), "%s.c", template);
-    snprintf(so, sizeof(so), "%s.so", template);
-    close(fd);
-    unlink(template);
     
     while (true) {
         char line[128];
