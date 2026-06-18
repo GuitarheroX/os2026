@@ -39,12 +39,12 @@ bool compile_and_load_function(const char* function_def) {
         if (waitpid(pid, &status, 0) < 0) {
             return false;
         }
-
-        dlopen(so, RTLD_NOW | RTLD_GLOBAL);
-        return true;
+        if (WIFEXITED(status) && WEXITSTATUS(status) == 0) {
+            dlopen(so, RTLD_NOW | RTLD_GLOBAL);
+            return true;
+        }
+        return false;
     }
-
-    return false;
 }
 
 // Evaluate an expression
@@ -80,17 +80,17 @@ bool evaluate_expression(const char* expression, int* result) {
         if (waitpid(pid, &status, 0) < 0) {
             return false;
         }
-
-        void *handle = dlopen(so, RTLD_NOW | RTLD_GLOBAL);
-        // int (*func)() = dlsym(handle, func_name);
-        int (*func)();
-        *(void**)(&func) = dlsym(handle, func_name);
-        *result = func();
-        dlclose(handle);
-        return true;
+        if (WIFEXITED(status) && WEXITSTATUS(status) == 0) {
+            void *handle = dlopen(so, RTLD_NOW | RTLD_GLOBAL);
+            // int (*func)() = dlsym(handle, func_name);
+            int (*func)();
+            *(void**)(&func) = dlsym(handle, func_name);
+            *result = func();
+            dlclose(handle);
+            return true;
+        }
+        return false;
     }
-
-    return false;
 }
 
 int main() {
