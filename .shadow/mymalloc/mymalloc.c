@@ -76,7 +76,7 @@ void *mymalloc(size_t size) {
     }
     // 计算 exp，使得 2^(exp-1) <= size + sizeof(block_t) <= 2^exp
     int exp = 1;
-    for (exp; exp <= N; exp++) {
+    for (; exp <= N; exp++) {
         if (size + sizeof(block_t) <= power(2, exp)) {
             break;
         }
@@ -85,7 +85,7 @@ void *mymalloc(size_t size) {
     int allocated = 0;
     block_t *curr = NULL;
     int i = exp;  // 记录真正被分配到的 order
-    for (i; i <= N; i++) {
+    for (; i <= N; i++) {
         // 尝试分配给 free_lists[i]
         curr = free_lists[i];
         if (curr != NULL) {
