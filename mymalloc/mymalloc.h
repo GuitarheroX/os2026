@@ -20,8 +20,17 @@ static inline void spin_unlock(spinlock_t *lock) {
     atomic_store_explicit(&lock->status, UNLOCKED, memory_order_release);
 }
 
+typedef struct block_t {
+    size_t size;
+    int free;
+    struct block_t *next;
+    struct block_t *prev;
+} block_t;
+
 void *mymalloc(size_t size);
 void myfree(void *ptr);
 
 void *vmalloc(void *addr, size_t length);
 void vmfree(void *addr, size_t length);
+
+void dump_free_lists(void);

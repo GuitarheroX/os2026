@@ -12,6 +12,15 @@ int main() {
     return 0;
 }
 
+void *vmalloc(void *addr, size_t length) {
+    (void)addr; (void)length;
+    return NULL;
+}
+
+void vmfree(void *addr, size_t length) {
+    (void)addr; (void)length;
+}
+
 #else
 
 #include <sys/mman.h>
