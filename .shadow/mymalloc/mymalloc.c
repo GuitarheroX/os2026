@@ -7,7 +7,7 @@ spinlock_t big_lock;
 // We don't need this malloc_count. You can remove it.
 long malloc_count;
 
-static block_t *free_lists[N];  // 全局变量自动初始化为 NULL
+static block_t *free_lists[N];  // 按块大小分层的空闲链表数组，free_lists[i] 存放大小为 2^i 的空闲块。（全局变量自动初始化为 NULL）
 extern spinlock_t big_lock;
 
 int power(int base, int exponent) {
@@ -85,7 +85,7 @@ void *mymalloc(size_t size) {
     int allocated = 0;
     block_t *curr = NULL;
     int i = exp;  // 记录真正被分配到的 order
-    for (; i <= N; i++) {
+    for (; i < N; i++) {
         // 尝试分配给 free_lists[i]
         curr = free_lists[i];
         if (curr != NULL) {
