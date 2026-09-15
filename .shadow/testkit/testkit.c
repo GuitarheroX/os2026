@@ -5,7 +5,7 @@
 #include <sys/wait.h>
 #include <sys/mman.h>
 #include <signal.h>
-#include "testkit.h"
+#include "testkit.h"  // include 本质上是在预处理阶段做文本复制
 
 static struct tk_testcase tests[TK_MAX_TESTS];
 
@@ -198,6 +198,7 @@ static void run_all_testcases(void) {
     for (int i = 0; tests[i].enabled; i++, ntests++) {
         struct tk_testcase *t = &tests[i];
 
+        // 这个 buf 用来做什么？
         char *buf = mmap(NULL,
             TK_OUTPUT_LIMIT,
             PROT_READ | PROT_WRITE,
@@ -269,6 +270,8 @@ static void worker_process() {
     exit(0);
 }
 
+/* 被它修饰的函数不需要任何人显式调用——动态链接器在加载程序后
+、跳转到 main 之前，会自动扫描所有带这个标记的函数并依次执行。*/
 __attribute__((constructor))
 void tk_register_hook(void) {
     // This is tricky: we must not call run_all_testcases() at exit; otherwise

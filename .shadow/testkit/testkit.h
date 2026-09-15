@@ -171,7 +171,7 @@ struct tk_testcase {
 #define TK_CONCAT_DETAIL(x, y) x##y
 
 /** Expands arguments before concatenating them */
-#define TK_CONCAT(x, y) TK_CONCAT_DETAIL(x, y)
+#define TK_CONCAT(x, y) TK_CONCAT_DETAIL(x, y) // ## 两侧的参数 x和 y 不会先展开，所以需要先展开后再用 ##
 
 /**
  * Generates a unique identifier by concatenating "__tk_", the provided
@@ -241,19 +241,21 @@ struct tk_testcase {
  */
 #define __tk_testcase(name_, body_arg, test, ...) \
     /* Declare the test function, e.g., __tk_test_example. */ \
-    static void TK_UNIQUE_NAME(name_)(body_arg); \
+    static void TK_UNIQUE_NAME(name_)(body_arg); /* 函数声明*/ \
     \
     /* Define a pre-main constructor to register this test case. */ \
+    /* __attribute__((...)) — 一个修饰语，用来给后面的声明附加编译器属性 */ \
+    /* constructor — 一个属性名，含义是"这个函数在 main() 之前自动执行" */ \
     __attribute__((constructor)) \
     void TK_UNIQUE_NAME(reg##name_)() { \
-        void tk_add_test(struct tk_testcase t); \
+        void tk_add_test(struct tk_testcase t); /* 函数声明，声明这个在 .c 中定义的函数存在 */ \
         \
         /* Call tk_add_test() to register. */ \
-        tk_add_test( (struct tk_testcase) { \
+        tk_add_test( (struct tk_testcase) { /* tk_testcase 数组在这里添加*/ \
             .enabled = 1, \
             .name = #name_, \
             .loc = __FILE__ ":" TK_TOSTRING(__LINE__),\
-            .test = TK_UNIQUE_NAME(name_), \
+            .test = TK_UNIQUE_NAME(name_), /* 替换自宏定义中的参数 test，后者为 stest 或 utest*/ \
             /* Variadic arguments are like: */ \
             /* .init = ..., .argv = ... */ \
             __VA_ARGS__ \
