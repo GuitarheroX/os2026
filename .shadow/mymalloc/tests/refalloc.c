@@ -74,9 +74,15 @@ void *vmalloc(void *addr, size_t length);
  * 这和 mymalloc.c 里 heap_init 踩的是同一个坑：**不能假设拿到的地址
  * 满足比页更大的对齐**，必须自己对齐。所以这里改成运行时对齐。
  *
- * 多要一个 REF_POOL 做余量，向上取整到 2 × REF_POOL —— 和 heap_init
- * 完全同样的道理：池内最大块的 buddy 是 base ^ 2^26，只有 base 的第 26
- * 位为 0 才落回池内，而 2 × REF_POOL 的对齐恰好保证这一点。 */
+ * 对齐到 REF_POOL 的倍数即可，**不要求 2 × REF_POOL**。
+ *
+ * 为什么这里能比 heap_init 松一档：2 × REF_POOL 对齐是为了让"段内最大块
+ * 的 buddy 落在段内"，而这一条只有在**最大块被释放并尝试合并**时才需要。
+ * 这个池子的根块一被取出来就立刻对半劈开，永远不会以 2^26 的尺寸回到
+ * 桶里；就算真的回去，myfree 里的边界检查也会挡住那一步合并。所以
+ * 2^26 对齐足够，而 2 × REF_POOL 的对齐**单次 mmap 不一定给得出来** ——
+ * 踩过：raw=0x108bd4000 时向上取整到 0x110000000，但映射只到 0x110bd4000，
+ * 池子实际只有 11.7 MiB 可用，写到一半就 EXC_BAD_ACCESS。 */
 static char *ref_pool;
 static char *ref_pool_raw;
 
@@ -109,25 +115,48 @@ static void ref_pop(block_t *b) {
     b->free = 0;
 }
 
-/* 池子初始化：申请一段连续内存、对齐、把整段作为一个 2^REF_ORDER 的
- * 块挂进最高 order 的桶。幂等，且在持锁状态下被调用。
+/* 申请池子：**只做一次**，成功后 ref_pool 非 NULL。
  *
  * 用 vmalloc 而不是 libc malloc：malloc 不保证大块对齐，而且这里要的
- * 本来就是"向 OS 要一段连续虚拟内存"这个语义。 */
-static void ref_pool_init(void) {
-    if (bucket[REF_ORDER] != NULL) return;
+ * 本来就是"向 OS 要一段连续虚拟内存"这个语义。
+ *
+ * 【守卫为什么不能用 `bucket[REF_ORDER] != NULL`】
+ *
+ * 踩过。根块被劈开之后 bucket[REF_ORDER] 就空了，于是这个守卫会**每次都
+ * 成立**，每次分配都重新申请一段新池子 —— 已经发出去的指针全部作废，
+ * 第二次分配返回的地址甚至不属于同一段内存。
+ *
+ * 判据必须是"池子有没有申请过"，而不是"最高 order 的桶空不空"
+ * （桶空是很正常的状态）。这里用 ref_pool 自身当判据。 */
+static void ref_pool_alloc(void) {
+    if (ref_pool != NULL) return;          /* 已经申请过了 */
 
     ref_pool_raw = vmalloc(NULL, REF_POOL * 2);
-    if (ref_pool_raw == NULL) return;      /* 建不起来，调用方会拿到 NULL */
+    if (ref_pool_raw == NULL) return;      /* 申请失败，调用方会拿到 NULL */
 
-    const uintptr_t mask = (((uintptr_t)1 << (REF_ORDER + 1)) - 1);
+    /* 向上取整到 REF_POOL 的倍数。向上取整最坏浪费 REF_POOL-1 字节，
+     * 而上面多要了一整份（2 × REF_POOL），所以池子必然完整落在映射内。 */
+    const uintptr_t mask = (uintptr_t)REF_POOL - 1;
     ref_pool = (char *)(((uintptr_t)ref_pool_raw + mask) & ~mask);
+}
+
+/* 把整段池子作为一个 2^REF_ORDER 的根块，挂进最高 order 的桶。
+ *
+ * 这一步要**单独**判"根块是否已经建过"，判据和上面不同：用 ref_root_built
+ * 这个显式标志。因为根块一旦被劈开就再也回不到 bucket[REF_ORDER] 里
+ * （除非释放到完全合并），拿桶空不空当判据会重复建根块、把整池覆盖掉。 */
+static int ref_root_built;
+
+static void ref_pool_init(void) {
+    ref_pool_alloc();
+    if (ref_pool == NULL || ref_root_built) return;
 
     block_t *root = (block_t *)ref_pool;
     root->size = REF_POOL;
     root->next = root->prev = NULL;
     root->free = 1;
     bucket[REF_ORDER] = root;
+    ref_root_built = 1;
 }
 
 /* ------------------------------------------------------------------ *
@@ -138,7 +167,16 @@ void *mymalloc(size_t size) {
     spin_lock(&ref_lock);
     ref_pool_init();
 
-    /* 头部本身要占地方。请求 0 字节也得给一个能安全读写的块。 */
+    /* 头部本身要占地方。请求 0 字节也得给一个能安全读写的块。
+     *
+     * 【溢出必须先判】`size + sizeof(block_t)` 会回绕：mymalloc(SIZE_MAX)
+     * 加 32 变成 31，够不着下面的最小块下限就被抬到 64，于是这个"比整个池子
+     * 还大"的请求会**成功返回一个小块** —— 而要求 5 说这种情况下必须返回
+     * NULL。踩过：套件的 sizes_and_alignment 就是拿 SIZE_MAX 试的。 */
+    if (size > SIZE_MAX - sizeof(block_t)) {
+        spin_unlock(&ref_lock);
+        return NULL;
+    }
     size_t need = size + sizeof(block_t);
     if (need < sizeof(block_t) * 2) need = sizeof(block_t) * 2;  /* 最小块 64B */
 

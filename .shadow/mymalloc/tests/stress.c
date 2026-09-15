@@ -164,7 +164,6 @@ static inline uint64_t rng_next(uint64_t *s) {
 
 #define PATTERN(k)  ((unsigned char)(0xA5u ^ (unsigned)(uintptr_t)(k)))
 #define DEAD_BYTE   ((unsigned char)0xDE)
-#define CANARY_BYTE ((unsigned char)0x5A)
 
 /* 估算用：常见 header 大约是 32 字节，只影响打印出来的估算值 */
 #define EST_HEADER 32
@@ -206,10 +205,17 @@ static size_t range_n[RANGE_SHARDS];
 
 static atomic_int shard_next;
 
-/* 每个线程一份模型：把 shard 号存成线程局部变量，调用点就不必到处传 */
+/* 每个线程一份模型：把 shard 号存成线程局部变量，调用点就不必到处传。
+ *
+ * 【n 为什么是指针】区间计数只有**一份**，存在 range_n[shard] 里。
+ * 原先这里存的是 `size_t n` 这个副本，于是同一次操作就有了两个真相：
+ * 插入只更新副本、range_n[] 永远是 0，而 rng_remove_shard 又是按
+ * range_n[] 去摘的 —— 它拿着一个空表去删，什么都删不掉，而且一声不吭。
+ * 表现出来就是"第 1 轮释放全部静默失败，第 2 轮起每次分配都报 overlap"。
+ * 存指针之后，无论从哪个入口进来，动的都是同一份计数。 */
 typedef struct {
     range_t *r;
-    size_t n;
+    size_t *n;
 } model_t;
 
 static _Thread_local model_t tls_model;
@@ -218,7 +224,7 @@ static _Thread_local int tls_shard = -1;
 static model_t *model_of_this_thread(void) {
     if (tls_shard < 0) {
         tls_shard = atomic_fetch_add(&shard_next, 1) % RANGE_SHARDS;
-        tls_model = (model_t){ ranges[tls_shard], 0 };
+        tls_model = (model_t){ ranges[tls_shard], &range_n[tls_shard] };
     }
     return &tls_model;
 }
@@ -235,25 +241,38 @@ static size_t rng_lower_bound(const range_t *v, size_t n, uintptr_t base) {
 
 /* 返回 0 = 插入成功且不与任何存活区间重叠；1 = 重叠；2 = 模型容量不足 */
 static int rng_insert(model_t *m, uintptr_t base, size_t size) {
-    if (m->n == RANGE_CAP) return 2;
+    if (*m->n == RANGE_CAP) return 2;
 
-    size_t at = rng_lower_bound(m->r, m->n, base);
+    size_t at = rng_lower_bound(m->r, *m->n, base);
     if (at > 0 && m->r[at - 1].base + m->r[at - 1].size > base) return 1;
-    if (at < m->n && m->r[at].base < base + size) return 1;
+    if (at < *m->n && m->r[at].base < base + size) return 1;
 
-    memmove(&m->r[at + 1], &m->r[at], (m->n - at) * sizeof(range_t));
+    memmove(&m->r[at + 1], &m->r[at], (*m->n - at) * sizeof(range_t));
     m->r[at].base = base;
     m->r[at].size = size;
-    m->n++;
+    (*m->n)++;
     return 0;
 }
 
 static void rng_remove(model_t *m, uintptr_t base) {
-    size_t at = rng_lower_bound(m->r, m->n, base);
-    if (at < m->n && m->r[at].base == base) {
-        memmove(&m->r[at], &m->r[at + 1], (m->n - at - 1) * sizeof(range_t));
-        m->n--;
+    size_t at = rng_lower_bound(m->r, *m->n, base);
+    if (at < *m->n && m->r[at].base == base) {
+        memmove(&m->r[at], &m->r[at + 1], (*m->n - at - 1) * sizeof(range_t));
+        (*m->n)--;
     }
+}
+
+/* 按**分片号**摘区间，而不是按"当前线程"。
+ *
+ * 释放线程未必是分配线程，而区间登记在分配线程的分片里。用
+ * model_of_this_thread() 会去找另一张表、找不到、静默失败 —— 那条区间就
+ * 永远留在分配线程的账上，此后合法的地址复用会被判成 overlap。
+ *
+ * 直接用分片号构造一个 model_t 即可：分片的内存是静态的，不需要加锁
+ * （每个分片同一时刻只有一个线程在动，见 model_of_this_thread 的说明）。 */
+static void rng_remove_shard(int shard, uintptr_t base) {
+    model_t m = { ranges[shard], &range_n[shard] };
+    rng_remove(&m, base);
 }
 
 /* 存活字节数记账：跨线程用原子操作累加。压测结束时必须回到 0，
@@ -273,7 +292,16 @@ typedef struct {
     void *p;                 /* mymalloc 返回的指针 */
     size_t size;             /* 申请的字节数 */
     unsigned char pattern;   /* 分配时写入的填充值 */
-    unsigned char canary;    /* 分配时写在 p[size] 的哨兵值 */
+    /* 这个块是在哪个分片上登记的存活区间。
+     *
+     * 【为什么必须记下来】区间是按 base 精确匹配删除的，而"分配"和"释放"
+     * 可以是**两个不同的线程**（cross_thread_free 就是这么设计的）。
+     * 如果删除时按"当前线程"的 TLS 分片去找，就会去另一张表里找、找不到、
+     * 静默失败 —— 于是这条区间永远留在分配线程的表里。那个用例跑完之后
+     * 4 张表里会积压 16384 条"其实早就释放了"的区间，此后任何**合法的地址
+     * 复用**都会被判成 overlap（假失败）。现在把登记时的分片号带着走，
+     * 归属就唯一确定了。 */
+    unsigned char shard;
 } blk_t;
 
 /* 静态预分配，避免测试自己调用 libc malloc 干扰内存观测 */
@@ -316,7 +344,7 @@ static blk_t *alloc_checked(size_t size, int *pool_full) {
              "（地址为奇数说明这个指针根本不是块头，是空闲链表损坏后的垃圾值）",
              size, p);
 
-    /* 写入 + 读回；同时在 p[size] 放哨兵抓溢出 */
+    /* 写入 + 读回 */
     unsigned char *q = (unsigned char *)p;
     unsigned char pattern = PATTERN((uintptr_t)p + size);
     memset(q, pattern, size);
@@ -324,9 +352,34 @@ static blk_t *alloc_checked(size_t size, int *pool_full) {
         TK_CHECK(q[size / 2] == pattern,
                  "mymalloc(%zu) 返回的 %p 写入后读回不一致", size, p);
     }
-    q[size] = CANARY_BYTE;
 
-    /* 要求 2：与其它存活区间不重叠
+    /* 【为什么没有"块尾哨兵"了 —— 这里踩过一个很贵的坑】
+     *
+     * 原先在 `q[size]` 写一个哨兵字节。那是**申请范围之外**的第一个字节，
+     * 而契约只保证 `[p, p+size)` 可读写 —— p+size 落在哪完全由分配器的
+     * 内部布局决定：本项目的 buddy 分配器给 mymalloc(size) 的块是
+     * 2^ceil(log2(size+32))，当 size+32 恰好是 2 的幂时（size ∈
+     * {0,32,96,224,...}）块没有任何余量，p[size] 就**正好压在相邻块的块头
+     * `size` 字段上**。
+     *
+     * 实测（/tmp/canary2.c）：连续 200 次 mymalloc(32)，
+     *
+     *     不写哨兵：重复分配 0 次
+     *     写哨兵  ：#2 起反复返回同一个地址 0x108000060
+     *
+     * 因为 size 字段被 0x5A 覆盖后，remove_blk 按 my_log2(0x5A)=6 去
+     * free_lists[6] 摘链，而那块挂在 free_lists[7] —— 摘了个寂寞，同一段
+     * 内存就反复发给了不同的调用者。
+     *
+     * 改成写 `q[size-1]` 也不行：那样哨兵落在载荷**里面**，size=1 时
+     * 它就等于载荷本身，测试写坏自己的数据再去抱怨"载荷被改写"。
+     *
+     * 结论是**哨兵这个思路在当前布局下无路可走**：契约以外的字节必然属于
+     * 分配器，测试没有权利写。所以这里只写契约范围内的载荷。"分配器给的
+     * 块比申请的还小"由 `q[size/2]` 的读回校验和下面的区间模型一起盯 ——
+     * 后者登记的是分配器**真正返回**的区间，比一个哨兵字节更直接。
+     *
+     * 要求 2：与其它存活区间不重叠
      *
      * rng_insert 有三个返回值，必须分开判：0 成功、1 重叠、2 容量不足。
      * 只写 `r != 1` 的话，容量不足（2）会被当成"没有重叠"放过去 ——
@@ -350,13 +403,27 @@ static blk_t *alloc_checked(size_t size, int *pool_full) {
         rng_remove(m, (uintptr_t)p);
         atomic_fetch_sub(&live_bytes, (long long)size);
         myfree(p);
+
+        /* 【池满必须喊一声】metadata 池是单调递增的（只取不还），
+         * concurrent_churn 一个用例就要 240000 个、占掉容量的 91.5%，
+         * 余量只有 8.4%。一旦超了，调用方只会看到"分配失败"然后继续跑，
+         * 最后照样打印"4 线程 x 60000 次操作完成" —— 整个用例静默降级成
+         * 空转，看起来却是通过的。这种假绿比失败更危险，所以在这里报一声。
+         * 只报第一次，避免在热路径上刷屏。 */
+        static atomic_bool pool_warned;
+        if (!atomic_exchange(&pool_warned, true)) {
+            NOTE("metadata 池已满（容量 %zu 个），自此以后的分配不再被检查，"
+                 "本用例的结论无效 —— 请调大 pool[] 或减小 ST_ITERS",
+                 sizeof(pool) / sizeof(pool[0]));
+        }
         return NULL;
     }
 
     b->p = p;
     b->size = size;
     b->pattern = pattern;
-    b->canary = CANARY_BYTE;
+    /* 记下这份区间登记在哪个分片上，释放时按它去摘（见 blk_t.shard） */
+    b->shard = (unsigned char)tls_shard;
     return b;
 }
 
@@ -372,13 +439,9 @@ static void verify_blk(blk_t *b, int full) {
                  b->p, b->size, b->pattern, q[0]);
         TK_CHECK(q[b->size - 1] == b->pattern,
                  "块 %p (size=%zu) 末字节被改写：期望 %02x 实得 %02x"
-                 "（疑似 off-by-one 越界）",
+                 "（载荷最后 1 字节都不可写，说明分配器给的块比申请的还小）",
                  b->p, b->size, b->pattern, q[b->size - 1]);
     }
-
-    TK_CHECK(q[b->size] == b->canary,
-             "块 %p (size=%zu) 的哨兵字节被改写：期望 %02x 实得 %02x（写越界）",
-             b->p, b->size, b->canary, q[b->size]);
 
     if (full) {
         for (size_t i = 0; i < b->size; i++) {
@@ -398,7 +461,12 @@ static void free_blk(blk_t *b, int full) {
     /* 置为"已死"填充值：若分配器之后仍把这块内存交给别人，
      * 那次分配的内容校验就会失败 —— 等于抓到了 use-after-free。 */
     memset(b->p, DEAD_BYTE, b->size);
-    rng_remove(model_of_this_thread(), (uintptr_t)b->p);
+
+    /* 按**登记时**的分片摘，不能用 model_of_this_thread()。
+     * 释放线程未必是分配线程（cross_thread_free 就是故意这么干的），
+     * 用当前线程的分片会去另一张表里找、找不到、静默失败，那条区间就
+     * 永远留在分配线程的表里，之后合法的地址复用会被误判成 overlap。 */
+    rng_remove_shard(b->shard, (uintptr_t)b->p);
     atomic_fetch_sub(&live_bytes, (long long)b->size);
 
     myfree(b->p);
@@ -441,7 +509,6 @@ static void model_reset_all(void) {
     atomic_store(&live_bytes, 0);
     atomic_store(&alloc_calls, 0);
     tls_shard = -1;        /* 本线程重新领一个分片 */
-    tls_model.n = 0;
     atomic_store(&check_reported, 0);
 
     for (int i = 0; i < ST_THREADS; i++) atomic_store(&st_progress[i], 0);
@@ -742,6 +809,10 @@ UnitTest(fragmentation_holes) {
         model_t *m = model_of_this_thread();
         int r = rng_insert(m, (uintptr_t)p, 16);
         TK_CHECK(r != 1, "填空得到的 %p 与存活区间重叠", p);
+        /* 和 alloc_checked 一样，容量不足（r==2）必须单独判：只写 r != 1
+         * 的话，这次插入根本没发生，后面 rng_remove 也就摘不掉任何东西，
+         * 区间表和存活集合从此对不上，而且是静默的。 */
+        TK_CHECK(r != 2, "区间模型容量不足（RANGE_CAP=%d）", (int)RANGE_CAP);
         memset(p, PATTERN(i), 16);
         rng_remove(m, (uintptr_t)p);
         myfree(p);
@@ -802,7 +873,15 @@ UnitTest(reuse_after_free) {
         for (int i = 0; i < R; i++) {
             int full = 0;
             blk_t *b = alloc_checked(32, &full);
-            if (!b) continue;
+            if (!b) {
+                /* 分配失败是合法的（段用尽 / 池满都会返回 NULL），但
+                 * **必须把槽位清空**：v[i] 此刻还指着上一轮已经释放过的块，
+                 * 留着它会让下面的释放循环对同一块走两遍 —— verify_blk 读
+                 * 已被回收的内存、live_bytes 二次扣减（变负）、myfree 被
+                 * 二次调用。那之后无论报什么错，都不能再算分配器的账。 */
+                v[i] = NULL;
+                continue;
+            }
 
             /* 观察：内容全 0 通常意味着这是一块刚 mmap 出来的新内存，
              * 而不是复用之前释放的块。作为"是否真的在复用"的旁证。 */
