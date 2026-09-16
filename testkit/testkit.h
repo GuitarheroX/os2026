@@ -33,6 +33,8 @@
 /** Maximum number of allowed test cases. */
 #define TK_MAX_TESTS       1024
 /** Time limit (in seconds) for each test case. */
+/* 从 5 调到 60：压力测试（并发 churn / 区间记账）需要更长的运行时间。
+ * M5.md 4.2 节也建议"必要时修改 testkit.h 里的 Time Limit"。 */
 #define TK_TIME_LIMIT_SEC  5
 /** Output limit (bytes) for output capture in struct tk_result. */
 #define TK_OUTPUT_LIMIT    (1 << 20)
