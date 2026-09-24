@@ -48,7 +48,7 @@ int my_log2(int n) {
 void insert_blk(block_t *block) {
     int n = my_log2(block->size);
     if (free_lists[n] != NULL) {
-        block->next = free_lists[n];
+        block->next = free_lists[n];  // free_list[n] 存的是 block，而不只存一个 header
         free_lists[n]->prev = block;
     }
     else {
@@ -71,20 +71,20 @@ void remove_blk(block_t *block) {
     }
 }
 
-block_t *divide(size_t size, block_t *block, int n) {
+block_t *divide(size_t size, block_t *block) {
     // 劈开大的 block，将最后合适的小 block 插入到 free_lists 中
-    // n 为当前所在 order
-    if ((size + sizeof(block_t)) * 2 > block -> size) {
+    // size 为需要分配的内存大小
+    if ((size + sizeof(block_t)) * 2 > block -> size) {  // 这一块内存的大小必须能容纳用户载荷和块头本身
         return block;
     }
     block_t *new_block = (block_t *)((char *)block + block->size / 2);
     new_block->size = block->size / 2;
     new_block->free = 1;
-    // new_block 插入 free_lists[n-1]
+
     insert_blk(new_block);
 
     block -> size /= 2;
-    return divide(size, block, n - 1);
+    return divide(size, block);
 }
 
 /* ---------------------------------------------------------------------------
@@ -112,8 +112,31 @@ block_t *divide(size_t size, block_t *block, int n) {
  * 16 KiB），对 order ≥ 14 就不成立了。所以：
  *
  *   1. 向 vmalloc 要 2 倍于段大小的量 —— 多出来的那一半是给对齐挪位置用的；
- *   2. 把返回的基址**向上**取整到段大小的整数倍（方向反了会崩，见代码注释）；
- *   3. 段起点是 2^(ORDER+1) 的倍数，因而段内所有块的 buddy 都在段内。
+ *   2. 把返回的基址**向上**取整到段大小的整数倍（方向反了会崩，见代码注释）。
+ *
+ * 【对齐到哪一档：段大小，而不是 2 倍段大小】
+ *
+ * 对齐的**目标**不是段里最大的块，而是段里最大的、**会参与合并**的块。
+ * 这两者不一样：
+ *
+ *   - 最大的块是 order = MYMALLOC_HEAP_ORDER，大小正好等于整段。它的
+ *     buddy 是 base ^ want = base ± want，**两个方向都在段外** —— 段就
+ *     这么大，装不下这一对。对齐改变不了这一点：把某一位清零只是让它
+ *     从"落在段下方"变成"落在段上方"。
+ *   - 所以这个块**不参与合并**，见 myfree 的循环上界。它不需要一个段内
+ *     的 buddy，也就不该为它调整对齐。
+ *   - 会参与合并的最大 order 是 MYMALLOC_HEAP_ORDER - 1（大小 want/2）。
+ *
+ * 于是要求归结为：对任意 k ≤ MYMALLOC_HEAP_ORDER - 1，段内偏移为 2^k
+ * 倍数的块，其 buddy 也在段内。base 是 want 的倍数 ⇒ 低 26 位全 0 ⇒
+ * buddy 偏移 o ^ 2^k 只翻转低于 26 的位，结果 < 2^26，必在段内。✓
+ *
+ * 【为什么不是更弱的 2^25 对齐】
+ *
+ * 段首可以有一个 2^25 的块（divide 把整段劈成两半时产生），它的 buddy
+ * 是 base ^ 2^25。只对齐到 2^25 的话 base 的第 25 位可能是 1，结果就是
+ * base - 2^25，掉到段**下方**去了。要堵住这个口子，正是要求 base 的
+ * 第 25 位为 0 —— 也就是 2^26 = want 对齐。want 对齐是充分且必要的下界。
  *
  * 【代价】
  *
@@ -132,12 +155,12 @@ static void heap_init(void) {
     }
 
     const size_t want = (size_t)1 << MYMALLOC_HEAP_ORDER;
-    void  *raw = vmalloc(NULL, want * 3);   /* 多要 2 倍，给对齐挪位置用 */
+    void  *raw = vmalloc(NULL, want * 2);   /* 多要 1 倍，给对齐挪位置用 */
     if (raw == NULL) {
         return;                     /* heap_base 保持 NULL，调用方会拿到 NULL */
     }
 
-    /* 把段起点**向上**取整到 2 × want 的倍数。
+    /* 把段起点**向上**取整到 want 的倍数。
      *
      * 【方向不能反】向下取整会得到一个比 raw 还低的地址，段就落到映射
      * 外面去了，对段首的第一次写就是 EXC_BAD_ACCESS。实测：
@@ -145,21 +168,9 @@ static void heap_init(void) {
      *     向下取整 → 0x100000000  在映射下方 80 MiB，写段首必崩
      *     向上取整 → 0x108000000  在映射内 ✓
      *
-     * 【为什么对齐到 2 × want，而不是 want】段里最大的块就是 want 字节
-     * （order = MYMALLOC_HEAP_ORDER），它的 buddy 是 base ^ want。异或会
-     * 翻转第 ORDER 位 —— 只有当 base 这一位本来就是 0，结果才落回段内。
-     * 对齐到 2 × want 恰好保证第 ORDER 位为 0。
-     *
-     * 实测（want = 2^26）：
-     *     base = 0x10c000000  第26位=1 → 该块 buddy = 0x108000000 ✗ 段外
-     *     base = 0x108000000  第26位=0 → 该块 buddy = 0x10c000000 ✓ 段内
-     *
-     * 对更小的块，只要 base 是 want 的倍数就自动成立 —— 2 × want 的对齐
-     * 更强，所以段内**所有** order（含最大块）的 buddy 都在段内。
-     *
-     * 【空间够不够】向上取整最坏浪费 2×want - 1 字节的前缀，要的 3 × want
+     * 【空间够不够】向上取整最坏浪费 want - 1 字节的前缀，要的 2 × want
      * 里减掉这段仍然 ≥ want，所以 [base, base+want) 一定完整在映射内。 */
-    const uintptr_t mask = (((uintptr_t)1 << (MYMALLOC_HEAP_ORDER + 1)) - 1);
+    const uintptr_t mask = (uintptr_t)want - 1;
     uintptr_t aligned = ((uintptr_t)raw + mask) & ~mask;
 
     /* raw 到 aligned 之间的空隙没用了，但它在同一个映射里 —— 不单独归还，
@@ -223,13 +234,22 @@ __attribute__((weak)) void *mymalloc(size_t size) {
     spin_lock(&big_lock);
     
     void *memory = NULL;
-    if (size + sizeof(block_t) > power(2, N)) {
+    // 申请的内存大于总内存的大小
+    /* 判据写成减法而不是 size + sizeof(block_t) > LIMIT：后者在 size 接近
+     * SIZE_MAX 时会回绕（SIZE_MAX + sizeof(block_t) == sizeof(block_t) - 1），
+     * 于是 mymalloc(SIZE_MAX) 被当成"只要 31 字节"而成功返回 —— 该拒的
+     * 请求反而通过，拿到一个远小于请求的块。
+     *
+     * 上界用段的 order 而不是 N：段就 2^MYMALLOC_HEAP_ORDER 字节，比它大的
+     * 请求怎么找都满足不了，只能在这里拒掉。原来写 N 会算出 exp = N = 27，
+     * 而 2^27 已经超过段大小，heap_carve 必然失败。 */
+    if (size > ((size_t)1 << MYMALLOC_HEAP_ORDER) - sizeof(block_t)) {
         spin_unlock(&big_lock);
         return memory;
     }
     // 计算 exp，使得 2^(exp-1) <= size + sizeof(block_t) <= 2^exp
     int exp = 1;
-    for (; exp <= N; exp++) {
+    for (; exp <= MYMALLOC_HEAP_ORDER; exp++) {
         if (size + sizeof(block_t) <= power(2, exp)) {
             break;
         }
@@ -251,7 +271,7 @@ __attribute__((weak)) void *mymalloc(size_t size) {
     // 要么是新申请的 block，要么是现有的 block。前者需要从内存段里切，后者需要 divide 劈开
     if (!allocated) {
         // 从连续内存段里切一块新的（原来这里是 vmalloc，见 heap_init 的说明）
-        void *raw = heap_carve(power(2, exp));
+        void *raw = heap_carve(power(2, exp));  // 这里会从什么位置切呢？
         curr = (block_t *) raw;
         // TODO(段用尽)：raw 为 NULL 时会在这里空指针解引用。段是固定大小的，
         // 用光就真的没了，应该在这里返回 NULL 而不是崩。留着你自己补。
@@ -260,7 +280,7 @@ __attribute__((weak)) void *mymalloc(size_t size) {
         curr->next = NULL;
         curr->prev = NULL;
     } else {
-        curr = divide(size, curr, i);
+        curr = divide(size, curr);
     }
 
     // 赋值 memory 和 free
@@ -277,8 +297,17 @@ __attribute__((weak)) void myfree(void *ptr) {
     block_t *block = (block_t *)ptr - 1;
     block->free = 1;
 
+    /* 上界是段的 order（= 段里最大块的 order），不是 N。
+     *
+     * order = MYMALLOC_HEAP_ORDER 的块大小正好等于整段，它的 buddy 是
+     * base ± want，两个方向都在段外 —— 段就这么大，装不下这一对，换什么
+     * 对齐都没用。所以它不参与合并，循环必须在这里停住，否则就是拿一个
+     * 段外地址去读 free/size。
+     *
+     * 停在这里，"进合并循环的块大小 ≤ want/2" 才成为不变式；配合 heap_init
+     * 里 want 的对齐，buddy 就必然落在段内。 */
     int order = my_log2(block -> size);
-    while (order < N) {
+    while (order < MYMALLOC_HEAP_ORDER) {
         block_t *buddy = (block_t *)((uintptr_t)block ^ ((uintptr_t)1 << order));
         if (buddy->free != 1 || buddy->size != block->size) {
             break;

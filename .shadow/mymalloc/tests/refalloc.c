@@ -48,6 +48,9 @@
 /* 来自 start.c：向 OS 要一段连续虚拟内存 */
 void *vmalloc(void *addr, size_t length);
 
+/* mymalloc.c 里的全局计数器（tests-trivial.c 的 concurrent 用例会断言它） */
+extern long malloc_count;
+
 /* ------------------------------------------------------------------ *
  * 池子：一段静态内存 + 按 order 分桶的空闲链表
  * ------------------------------------------------------------------ */
@@ -219,7 +222,19 @@ void *mymalloc(size_t size) {
     }
 
     b->free = 0;
+
+    /* tests-trivial.c 的 concurrent 用例靠这个计数器断言"4 线程各跑 N 次"。
+     * 真实分配器里它在 mymalloc.c 中被维护，参考实现也得跟上，否则那个
+     * 用例失败的原因是"对照实现少记了一个数"，而不是被测对象有问题。
+     *
+     * 【必须在锁里自增】放在 spin_unlock 之后踩过：`long` 的自增不是原子
+     * 操作（读-改-写三步），4 个线程会丢更新。实测 20 次里 13 次对不上，
+     * 差值 1~4。mymalloc.c 的对应语句就在 spin_unlock(&big_lock) 之前，
+     * 两边条件才一致。 */
+    malloc_count++;
+
     spin_unlock(&ref_lock);
+
     return (void *)(b + 1);
 }
 
