@@ -16,7 +16,7 @@
 // all the individual layers' forward passes
 // B = batch_size, T = sequence_length, C = channels, V = vocab_size
 
-#define THREAD_NUM 2
+#define THREAD_NUM 3
 
 static struct {
     float *out, *inp, *weight, *bias;
