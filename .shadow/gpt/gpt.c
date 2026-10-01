@@ -30,12 +30,13 @@ void matmul_worker(void *arg) {
         float b_o = G.bias ? G.bias[o] : 0.0f;
         for (int b = 0; b < G.B; b++) {
             for (int t = 0; t < G.T; t++) {
+                float* out_bt = G.out + (b * G.T + t) * G.OC;
                 float* inp_bt = G.inp + (b * G.T + t) * G.C;
                 float val = b_o;
                 for (int i = 0; i < G.C; i++) {
                     val += wrow[i] * inp_bt[i];
                 }
-                G.out[(b * G.T + t) * G.OC + o] = val;
+                out_bt[o] = val;
             }
         }
     }
