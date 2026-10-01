@@ -142,6 +142,7 @@ void matmul_forward(float* out,
         spawn(matmul_worker);
     }
     join();
+    n_ = 0;  // reset, so the next round allocates ids 1..N again
 }
 
 void attention_forward(float* out, float* preatt, float* att,
