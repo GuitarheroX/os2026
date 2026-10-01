@@ -25,7 +25,8 @@ static struct {
 
 void matmul_worker(void *arg) {
     int id = (int)(long)arg;
-    printf("matmul_worker id = %d\n", id);
+    // debug
+    // printf("matmul_worker id = %d\n", id);
     for (int o = id - 1; o < G.OC; o += THREAD_NUM) {
         float* wrow = G.weight + o * G.C;
         float b_o = G.bias ? G.bias[o] : 0.0f;
