@@ -16,7 +16,7 @@
 // all the individual layers' forward passes
 // B = batch_size, T = sequence_length, C = channels, V = vocab_size
 
-#define THREAD_NUM 1
+#define THREAD_NUM 8
 
 static struct {
     float *out, *inp, *weight, *bias;
@@ -25,7 +25,7 @@ static struct {
 
 void matmul_worker(void *arg) {
     int id = (int)(long)arg;
-    for (int o = id; o < G.OC; o += THREAD_NUM) {
+    for (int o = id - 1; o < G.OC; o += THREAD_NUM) {
         float* wrow = G.weight + o * G.C;
         float b_o = G.bias ? G.bias[o] : 0.0f;
         for (int b = 0; b < G.B; b++) {
