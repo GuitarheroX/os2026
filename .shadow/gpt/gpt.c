@@ -16,6 +16,31 @@
 // all the individual layers' forward passes
 // B = batch_size, T = sequence_length, C = channels, V = vocab_size
 
+#define THREAD_NUM = 8;  // thread number
+
+static struct {
+    float *out, *inp, *weight, *bias;
+    int B, T, C, OC;
+} G;
+
+void matmul_worker(void *arg) {
+    int id = (int)(long)arg;
+    for (int o = id; o < G.OC; o += THREAD_NUM) {
+        float* wrow = G.weight + o * G.C;
+        float b_o = G.bias ? G.bias[o] : 0.0f;
+        for (int b = 0; b < G.B; b++) {
+            for (int t = 0; t < G.T; t++) {
+                float* inp_bt = G.inp + (b * G.T + t) * G.C;
+                float val = b_o;
+                for (int i = 0; i < G.C; i++) {
+                    val += wrow[i] * inp_bt[i];
+                }
+                G.out[(b * G.T + t) * G.OC + o] = val;
+            }
+        }
+    }
+}
+
 void encoder_forward(float* out,
                    int* inp, float* wte, float* wpe,
                    int B, int T, int C) {
@@ -90,20 +115,12 @@ void matmul_forward(float* out,
     // OC is short for "output channels"
     // inp is (B,T,C), weight is (OC, C), bias is (OC)
     // out will be (B,T,OC)
-    for (int b = 0; b < B; b++) {
-        for (int t = 0; t < T; t++) {
-            float* out_bt = out + b * T * OC + t * OC;
-            float* inp_bt = inp + b * T * C + t * C;
-            for (int o = 0; o < OC; o++) {
-                float val = (bias != NULL) ? bias[o] : 0.0f;
-                float* wrow = weight + o*C;
-                for (int i = 0; i < C; i++) {
-                    val += inp_bt[i] * wrow[i];
-                }
-                out_bt[o] = val;
-            }
-        }
+    G.out = out; G.inp = inp; G.weight = weight; G.bias = bias;
+    G.B = B; G.T = T; G.C = C; G.OC = OC;
+    for (int i = 0; i < THREAD_NUM; i++) {
+        spawn(matmul_worker);
     }
+    join();
 }
 
 void attention_forward(float* out, float* preatt, float* att,
