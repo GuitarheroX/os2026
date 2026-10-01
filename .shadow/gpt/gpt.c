@@ -22,9 +22,10 @@ static struct {
     float *out, *inp, *weight, *bias;
     int B, T, C, OC;
 } G;
-/*
+
 void matmul_worker(void *arg) {
     int id = (int)(long)arg;
+    printf("%d\n", id);
     for (int o = id - 1; o < G.OC; o += THREAD_NUM) {
         float* wrow = G.weight + o * G.C;
         float b_o = G.bias ? G.bias[o] : 0.0f;
@@ -41,7 +42,8 @@ void matmul_worker(void *arg) {
         }
     }
 }
-*/
+
+/*
 void matmul_worker(void *arg) {
 	for (int b = 0; b < G.B; b++) {
 		for (int t = 0; t < G.T; t++) {
@@ -58,6 +60,7 @@ void matmul_worker(void *arg) {
 		} 
 	} 
 }
+*/
 
 void encoder_forward(float* out,
                    int* inp, float* wte, float* wpe,
